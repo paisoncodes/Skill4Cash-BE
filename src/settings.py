@@ -41,7 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     #installed apps
-    'rest_framework'
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'authentication'
 ]
 
 MIDDLEWARE = [
@@ -55,6 +57,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'src.urls'
+
+AUTH_USER_MODEL = "authentication.Customer"
 
 TEMPLATES = [
     {
