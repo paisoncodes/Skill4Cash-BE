@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     
     #installed apps
     'rest_framework',
-    'auth'
+    'rest_framework_simplejwt',
+    'authentication'
 ]
 
 MIDDLEWARE = [
@@ -56,6 +57,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'src.urls'
+
+AUTH_USER_MODEL = "authentication.Customer"
 
 TEMPLATES = [
     {
