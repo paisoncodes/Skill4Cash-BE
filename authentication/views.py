@@ -15,9 +15,16 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 # Create your views here.
 
+class HelloView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        user = request.user
+        return Response({'message': f"welcome {user}"})
+
 
 class CustomerRegister(APIView):
     permission_classes=(AllowAny,)
+
     queryset = Customer.objects.all()
     serializer_class = CustomerRegistrationSerializer
     
