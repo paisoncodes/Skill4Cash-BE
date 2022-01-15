@@ -6,6 +6,9 @@ class UserManager(BaseUserManager):
         self,
         email,
         password=None,
+        is_staff=False,
+        is_active=True,
+        is_admin=False,
         **extra_fields
     ):
         if not email:
