@@ -46,7 +46,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
 
         return user
 
-class SPRegistrationSerializer(serializers.Serializer):
+class SPRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
             required=True,
             validators=[UniqueValidator(queryset=ServiceProvider.objects.all())]
@@ -56,7 +56,8 @@ class SPRegistrationSerializer(serializers.Serializer):
     password2 = serializers.CharField(write_only=True, required=True)
     class Meta:
         model = ServiceProvider
-        fields = ('password', 'password2', 'email', 'first_name', 'last_name', 'phone_number','business_name')
+        fields = ('password', 'password2', 'email', 'first_name', 'last_name', 'phone_number','business_name','is_verified')
+        read_only_fields = ['is_verified']
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},
@@ -70,7 +71,7 @@ class SPRegistrationSerializer(serializers.Serializer):
         return attrs
     
     def create(self, validated_data):
-        user = Customer.objects.create(
+        user = ServiceProvider.objects.create(
             email=validated_data['email'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],

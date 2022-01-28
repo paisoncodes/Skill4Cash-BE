@@ -21,6 +21,5 @@ urlpatterns = [
     path("sp/<str:id>/", ServiceProviderRetrieveUpdateDelete.as_view()),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
-
     path("customer/", HelloView.as_view())
 ]

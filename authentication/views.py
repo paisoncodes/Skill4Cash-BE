@@ -86,6 +86,7 @@ class CustomerRetrieveUpdateDelete(APIView):
 class ServiceProviderRegister(APIView):
     queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
+    permission_classes = (AllowAny,)
 
     
     def post(self, request):
