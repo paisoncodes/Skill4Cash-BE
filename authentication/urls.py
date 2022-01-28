@@ -15,8 +15,8 @@ from .views import HelloView
 
 
 urlpatterns = [
-    path("customer/register/", CustomerRegister.as_view()),
-    path("customer/<str:id>/", CustomerRetrieveUpdateDelete.as_view()),
+    path("customers/register/", CustomerRegister.as_view()),
+    path("customers/<str:id>/", CustomerRetrieveUpdateDelete.as_view()),
     path("sp/register/", ServiceProviderRegister.as_view()),
     path("sp/<str:id>/", ServiceProviderRetrieveUpdateDelete.as_view()),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
