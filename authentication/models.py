@@ -1,4 +1,5 @@
 from enum import Enum
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
 from .manager import UserManager
@@ -16,7 +17,7 @@ class RoleEnum(Enum):
         return self.value
 
 class User(AbstractBaseUser):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True, null=False)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -60,9 +61,9 @@ class User(AbstractBaseUser):
     
     
 class ServiceProvider(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="service_provider")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_provider")
     business_name = models.CharField(max_length=200, unique=True, blank=False, null=False)
     service_category = models.CharField(max_length=200, blank=True, null=True)
-    keywords = models.JSONField(null = True, default = [])
-    gallery = models.JSONField(null = True, default = [])
+    keywords = models.JSONField(null = True, default = list)
+    gallery = models.JSONField(null = True, default = list)
     is_verified = models.BooleanField(default=False)

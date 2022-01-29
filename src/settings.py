@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     
     #installed apps
     'phonenumber_field',
@@ -53,7 +54,6 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'rest_auth',
-    'rest_auth.registration',
     
     
     'authentication.apps.AuthConfig',
@@ -105,10 +105,6 @@ REST_FRAMEWORK = {
     ]
 }
 
-REST_USE_JWT = True
-
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
 WSGI_APPLICATION = 'src.wsgi.application'
 
