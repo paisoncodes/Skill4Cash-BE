@@ -1,3 +1,4 @@
+from enum import Enum
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
 from .manager import UserManager
@@ -7,8 +8,14 @@ import uuid
 
 # Create your models here.
 
+class RoleEnum(Enum):
+    CUSTOMER = "customer"
+    SERVICE_PROVIDER = "service_provider"
+    
+    def __str__(self):
+        return self.value
 
-class Customer(AbstractBaseUser):
+class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
@@ -18,8 +25,9 @@ class Customer(AbstractBaseUser):
     staff = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     admin = models.BooleanField(default=False)
+    role = models.CharField(max_length=20, choices=[(tag.name, tag.value) for tag in RoleEnum])
+    location = models.CharField(max_length=100)
 
-    
     
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -49,6 +57,12 @@ class Customer(AbstractBaseUser):
     @property
     def is_admin(self):
         return self.admin
-
-class ServiceProvider(Customer):
-    business_name = models.CharField(max_length=200, unique=True)
+    
+    
+class ServiceProvider(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="service_provider")
+    business_name = models.CharField(max_length=200, unique=True, blank=False, null=False)
+    service_category = models.CharField(max_length=200, blank=True, null=True)
+    keywords = models.JSONField(null = True, default = [])
+    gallery = models.JSONField(null = True, default = [])
+    is_verified = models.BooleanField(default=False)

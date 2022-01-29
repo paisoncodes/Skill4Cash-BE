@@ -64,7 +64,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'src.urls'
 
-AUTH_USER_MODEL = "authentication.Customer"
+AUTH_USER_MODEL = "authentication.User"
 
 TEMPLATES = [
     {
