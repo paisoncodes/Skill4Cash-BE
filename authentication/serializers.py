@@ -33,6 +33,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
         return attrs
     
     def create(self, validated_data):
+        del validated_data['password2']
         user = models.User.objects.create_user(role=models.RoleEnum.CUSTOMER, **validated_data)
         user.save()
 
