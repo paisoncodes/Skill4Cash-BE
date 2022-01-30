@@ -7,7 +7,7 @@ from .serializers import (
     SPRegistrationSerializer
 )
 from .models import (
-    Customer,
+    User,
     ServiceProvider
 )
 from rest_framework.views import APIView
@@ -25,7 +25,7 @@ class HelloView(APIView):
 class CustomerRegister(APIView):
     permission_classes=(AllowAny,)
 
-    queryset = Customer.objects.all()
+    queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
     
     def post(self, request):
@@ -40,12 +40,12 @@ class CustomerRegister(APIView):
 
 # Not in use yet. Still needs to be fixed.
 class CustomerRetrieveUpdateDelete(APIView):
-    queryset = Customer.objects.all()
+    queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
 
     def get(self, id, request):
 
-        customer = Customer.objects.get(id=id)
+        customer = User.objects.get(id=id)
         serializer = CustomerRegistrationSerializer(customer)
         if customer:
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -53,7 +53,7 @@ class CustomerRetrieveUpdateDelete(APIView):
             return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
     
     def put(self, id, request):
-        customer = Customer.objects.get(id=id)
+        customer = User.objects.get(id=id)
         if customer:
             serializer = CustomerRegistrationSerializer(customer, data=request.data)
             if serializer.is_valid():
@@ -69,7 +69,7 @@ class CustomerRetrieveUpdateDelete(APIView):
             })
     
     def delete(self, id, request):
-        customer = Customer.objects.get(id=id)
+        customer = User.objects.get(id=id)
         if customer:
             customer.delete()
             return Response({
@@ -86,6 +86,7 @@ class CustomerRetrieveUpdateDelete(APIView):
 class ServiceProviderRegister(APIView):
     queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
+    permission_classes = (AllowAny,)
 
     
     def post(self, request):

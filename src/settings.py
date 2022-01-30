@@ -43,11 +43,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     
     #installed apps
+    'phonenumber_field',
     'rest_framework',
     'rest_framework_simplejwt',
-    'authentication'
+    
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'rest_auth',
+    
+    
+    'authentication.apps.AuthConfig',
 ]
 
 MIDDLEWARE = [
@@ -63,7 +72,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'src.urls'
 
-AUTH_USER_MODEL = "authentication.Customer"
+AUTH_USER_MODEL = "authentication.User"
 
 TEMPLATES = [
     {
@@ -81,6 +90,10 @@ TEMPLATES = [
     },
 ]
 
+
+
+SITE_ID = 1
+
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
@@ -91,6 +104,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication'
     ]
 }
+
 
 WSGI_APPLICATION = 'src.wsgi.application'
 
