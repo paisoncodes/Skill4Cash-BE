@@ -23,9 +23,9 @@ class User(AbstractBaseUser):
     last_name = models.CharField(max_length=100)
     phone_number = PhoneNumberField(unique=True)
     is_verified = models.BooleanField(default=False)
-    staff = models.BooleanField(default=False)
-    active = models.BooleanField(default=True)
-    admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=[(tag.name, tag.value) for tag in RoleEnum])
     location = models.CharField(max_length=100)
 
@@ -47,17 +47,7 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return True 
 
-    @property
-    def is_staff(self):
-        return self.staff
 
-    @property
-    def is_active(self):
-        return self.active
-
-    @property
-    def is_admin(self):
-        return self.admin
     
     
 class ServiceProvider(models.Model):

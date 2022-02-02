@@ -28,15 +28,21 @@ class UserManager(BaseUserManager):
         user = self.create_user(
             email=self.normalize_email(email),
             password=password,
-            is_staff=True,
         )
+        user.is_staff=True
+
+        user.save(using = self.db)
+        
         return user
 
-    def create_superuser(self, email, password=None):
+    def create_superuser(self, email, password):
         user = self.create_user(
             email=self.normalize_email(email),
             password=password,
-            is_staff=True,
-            is_admin=True,
         )
+        user.is_admin = True
+        user.is_staff = True
+        user.is_super_user = True
+
+        user.save(using = self.db)
         return user
