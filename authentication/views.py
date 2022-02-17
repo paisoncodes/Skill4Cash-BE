@@ -1,39 +1,35 @@
-from django.http.response import Http404, JsonResponse
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.serializers import Serializer
-from .serializers import (
-    CustomerRegistrationSerializer,
-    SPRegistrationSerializer
-)
-from .models import (
-    User,
-    ServiceProvider
-)
+from .serializers import CustomerRegistrationSerializer, SPRegistrationSerializer
+from .models import User, ServiceProvider
 from rest_framework_simplejwt.tokens import RefreshToken
 from src.utils import Utils
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
-import jwt
 from django.conf import settings
+from django.shortcuts import get_list_or_404
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from .permissions import PostReadAllPermission
+import jwt
 
 # Create your views here.
 
-class HelloView(APIView):
-    permission_classes = (IsAuthenticated,)
-    def get(self, request):
-        user = request.user
-        return Response({'message': f"welcome {user}"})
 
-
-class CustomerRegister(APIView):
-    permission_classes=(AllowAny,)
-
+class CustomerRegisterGetAll(APIView):
+    permission_classes = (PostReadAllPermission,)
     queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
-    
+
+    def get(self, request):
+        users_objs = get_list_or_404(User, role="customer")
+        users_serilizer = CustomerRegistrationSerializer(users_objs, many=True)
+        data = {
+            "message": "Successfully retrieved customers",
+            "data": users_serilizer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+        
     def post(self, request):
         serializer = CustomerRegistrationSerializer(data=request.data)
 
@@ -42,12 +38,12 @@ class CustomerRegister(APIView):
 
             user_data = serializer.data
 
-            user = User.objects.get(email=user_data['email'])
-                
+            user = User.objects.get(email=user_data["email"])
+
             token = RefreshToken.for_user(user).access_token
-            
+
             relative_link = reverse("verify_email")
-                
+
             current_site = get_current_site(request).domain
 
             absolute_url = f"http://{current_site}{relative_link}?token={str(token)}"
@@ -57,7 +53,7 @@ class CustomerRegister(APIView):
             data = {
                 "email_subject": "Verify your email",
                 "email_body": email_body,
-                "to_email": user.email
+                "to_email": user.email,
             }
 
             Utils.send_email(data)
@@ -66,10 +62,12 @@ class CustomerRegister(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 # Not in use yet. Still needs to be fixed.
 class CustomerRetrieveUpdateDelete(APIView):
     queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get(self, id, request):
 
@@ -79,7 +77,7 @@ class CustomerRetrieveUpdateDelete(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
-    
+
     def put(self, id, request):
         customer = User.objects.get(id=id)
         if customer:
@@ -91,32 +89,40 @@ class CustomerRetrieveUpdateDelete(APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({
-                "message": "Invalid User ID",
-                "status": status.HTTP_404_NOT_FOUND
-            })
-    
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+            )
+
     def delete(self, id, request):
         customer = User.objects.get(id=id)
         if customer:
             customer.delete()
-            return Response({
-                "message": "User deleted successfully",
-                "status": status.HTTP_204_NO_CONTENT
-            })
+            return Response(
+                {
+                    "message": "User deleted successfully",
+                    "status": status.HTTP_204_NO_CONTENT,
+                }
+            )
         else:
-            return Response({
-                "message": "Invalid User ID",
-                "status": status.HTTP_404_NOT_FOUND
-            })
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+            )
 
 
 class ServiceProviderRegister(APIView):
     queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (PostReadAllPermission,)
 
-    
+    def get(self, request):
+        users_objs = get_list_or_404(User, role="service_provider")
+        users_serilizer = CustomerRegistrationSerializer(users_objs, many=True)
+        data = {
+            "message": "Successfully retrieved customers",
+            "data": users_serilizer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
     def post(self, request):
         serializer = SPRegistrationSerializer(data=request.data)
 
@@ -124,12 +130,12 @@ class ServiceProviderRegister(APIView):
             serializer.save()
             user_data = serializer.data
 
-            user = User.objects.get(email=user_data['email'])
-                
+            user = User.objects.get(email=user_data["email"])
+
             token = RefreshToken.for_user(user).access_token
-            
+
             relative_link = reverse("verify_email")
-                
+
             current_site = get_current_site(request).domain
 
             absolute_url = f"http://{current_site}{relative_link}?token={str(token)}"
@@ -139,7 +145,7 @@ class ServiceProviderRegister(APIView):
             data = {
                 "email_subject": "Verify your email",
                 "email_body": email_body,
-                "to_email": user.email
+                "to_email": user.email,
             }
 
             Utils.send_email(data)
@@ -155,17 +161,17 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
 
     def get(self, id, request):
 
-        customer = ServiceProvider.objects.get(id=id)
-        serializer = SPRegistrationSerializer(customer)
-        if customer:
+        service_provider = ServiceProvider.objects.get(id=id)
+        serializer = SPRegistrationSerializer(service_provider)
+        if service_provider:
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
-    
+
     def put(self, id, request):
-        customer = ServiceProvider.objects.get(id=id)
-        if customer:
-            serializer = SPRegistrationSerializer(customer, data=request.data)
+        service_provider = ServiceProvider.objects.get(id=id)
+        if service_provider:
+            serializer = SPRegistrationSerializer(service_provider, data=request.data)
             if serializer.is_valid():
                 serializer.save()
 
@@ -173,29 +179,31 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({
-                "message": "Invalid User ID",
-                "status": status.HTTP_404_NOT_FOUND
-            })
-    
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+            )
+
     def delete(self, id, request):
-        customer = ServiceProvider.objects.get(id=id)
-        if customer:
-            customer.delete()
-            return Response({
-                "message": "User deleted successfully",
-                "status": status.HTTP_204_NO_CONTENT
-            })
+        service_provider = ServiceProvider.objects.get(id=id)
+        if service_provider:
+            service_provider.delete()
+            return Response(
+                {
+                    "message": "User deleted successfully",
+                    "status": status.HTTP_204_NO_CONTENT,
+                }
+            )
         else:
-            return Response({
-                "message": "Invalid User ID",
-                "status": status.HTTP_404_NOT_FOUND
-            })
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+            )
+
+
 class VerifyEmail(APIView):
     def get(self, request):
-        token = request.GET.get('token')
+        token = request.GET.get("token")
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             user = User.objects.get(id=payload["user_id"])
 
             if not user.is_verified:
@@ -207,7 +215,8 @@ class VerifyEmail(APIView):
             )
         except jwt.ExpiredSignatureError:
             return Response(
-                {"error": "Verification link expired"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Verification link expired"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except jwt.exceptions.DecodeError:
             return Response(
