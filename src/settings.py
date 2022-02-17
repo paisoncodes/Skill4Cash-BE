@@ -53,11 +53,23 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'rest_auth',
     
     
     'authentication.apps.AuthConfig',
 ]
+
+# django-allauth
+SITE_ID = 1
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+# ACCOUNT_EMAIL_REQUIRED=True
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -92,7 +104,6 @@ TEMPLATES = [
 
 
 
-SITE_ID = 1
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
