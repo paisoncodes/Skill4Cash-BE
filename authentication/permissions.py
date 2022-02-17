@@ -6,3 +6,6 @@ class PostReadAllPermission(BasePermission):
         if request.method == 'GET':
             if request.user.is_authenticated:
                 return True
+            
+        elif request.method == 'POST':
+            return True

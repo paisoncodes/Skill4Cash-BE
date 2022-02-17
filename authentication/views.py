@@ -200,6 +200,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
 
 
 class VerifyEmail(APIView):
+    permission_classes = (AllowAny,)
     def get(self, request):
         token = request.GET.get("token")
         try:
