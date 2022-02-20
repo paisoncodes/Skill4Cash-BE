@@ -14,12 +14,12 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             )
 
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
 
     
     class Meta:
         model = models.User
-        fields = ('password', 'password2', 'email', 'first_name', 'last_name', 'phone_number','location','role','is_verified')
+        fields = ('password', 'confirm_password', 'email', 'first_name', 'last_name', 'phone_number','location','role','is_verified')
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True}
@@ -27,14 +27,14 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
         read_only_fields = ['is_verified','role']
     
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
+        if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"Password": "Password fields didn't match."})
 
         return attrs
     
     def create(self, validated_data):
-        del validated_data['password2']
-        user = models.User.objects.create_user(role=models.RoleEnum.CUSTOMER, **validated_data)
+        del validated_data['confirm_password']
+        user = models.User.objects.create_user(role=models.RoleEnum.CUSTOMER.value, **validated_data)
         user.save()
 
         return user
