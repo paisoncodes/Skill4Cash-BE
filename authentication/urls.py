@@ -5,7 +5,8 @@ from .views import (
     CustomerRetrieveUpdateDelete,
     ServiceProviderRegister,
     ServiceProviderRetrieveUpdateDelete,
-    VerifyEmail
+    VerifyEmail,
+    GoogleLogin
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -19,6 +20,7 @@ urlpatterns = [
     path("sp/register/", ServiceProviderRegister.as_view()),
     path("sp/<str:id>/", ServiceProviderRetrieveUpdateDelete.as_view()),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
+    path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("login/google/", GoogleLogin.as_view()), 
     path('verify-email/', VerifyEmail.as_view(), name="verify_email")
 ]

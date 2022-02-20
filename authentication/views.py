@@ -13,6 +13,10 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .permissions import PostReadAllPermission
 import jwt
 
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+
 # Create your views here.
 
 
@@ -223,3 +227,8 @@ class VerifyEmail(APIView):
             return Response(
                 {"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
