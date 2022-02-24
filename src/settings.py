@@ -54,9 +54,9 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'drf_yasg',
     'dj_rest_auth',
     'rest_framework.authtoken',
-    
     
     'authentication.apps.AuthConfig',
 ]
