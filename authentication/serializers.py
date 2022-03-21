@@ -1,9 +1,6 @@
-import phonenumbers
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from phonenumber_field.serializerfields import PhoneNumberField
 from . import models
 
 
@@ -19,7 +16,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = models.User
-        fields = ('password', 'confirm_password', 'email', 'first_name', 'last_name', 'phone_number','location','role','is_verified')
+        fields = ('email', 'first_name', 'last_name', 'phone_number', 'password', 'confirm_password', 'location','role','is_verified')
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True}
