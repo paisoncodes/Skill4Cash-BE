@@ -11,6 +11,7 @@ from django.shortcuts import get_list_or_404
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .permissions import PostReadAllPermission
+from django.core.exceptions import ObjectDoesNotExist
 import jwt
 
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
@@ -62,7 +63,10 @@ class CustomerRegisterGetAll(APIView):
 
             Utils.send_email(data)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return_data = dict(serializer.data)            
+            return_data["verification_link"] = absolute_url
+
+            return Response(return_data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -153,7 +157,11 @@ class ServiceProviderRegister(APIView):
             }
 
             Utils.send_email(data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            return_data = dict(serializer.data)
+            return_data["verification_link"] = absolute_url
+
+            return Response(return_data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -188,8 +196,8 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             )
 
     def delete(self, id, request):
-        service_provider = ServiceProvider.objects.get(id=id)
-        if service_provider:
+        try:
+            service_provider = ServiceProvider.objects.get(id=id)
             service_provider.delete()
             return Response(
                 {
@@ -197,7 +205,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
                     "status": status.HTTP_204_NO_CONTENT,
                 }
             )
-        else:
+        except ObjectDoesNotExist:
             return Response(
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
