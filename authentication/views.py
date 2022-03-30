@@ -22,7 +22,7 @@ from dj_rest_auth.registration.views import SocialLoginView
 
 
 class CustomerRegisterGetAll(APIView):
-    permission_classes = (PostReadAllPermission,)
+    # permission_classes = (PostReadAllPermission,)
     queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
 
