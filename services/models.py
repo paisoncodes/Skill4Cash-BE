@@ -9,7 +9,18 @@ from authentication.models import ServiceProvider, User
 
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, unique=True, editable=False, default=uuid.uuid4)
-    name = models.CharField(max_length=225, unique=True)
+
+    CATEGORY_LIST = (
+        ("FASHION", "Fashion"),
+        ("ELECTRONICS", "Electroincs"),
+        ("WEB DEVELOPMENT", "Web Development"),
+        ("ARTS & CRAFTS", "Arts & Crafts"),
+        ("BOOKS", "Books"),
+        ("SOFTWARE", "Software"),
+        ("HOME & KITCHEN", "Home & Kitchen"),
+    )
+
+    name = models.CharField(max_length=225, choices=CATEGORY_LIST)
 
     class Meta:
         verbose_name_plural = "Categories"
