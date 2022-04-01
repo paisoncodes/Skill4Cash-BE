@@ -82,29 +82,38 @@ class ReadSPReviews(APIView):
             )
 
 
-class PickCategory(APIView):
+class CreateReadCategory(APIView):
     # permission_classes = (IsAuthenticated,)
     serializer_class = CategorySerializer
     category = Category.objects.all()
 
     def get(self, request):
         category_serializer = CategorySerializer(self.category, many=True)
+        category_list = [category["name"] for category in category_serializer.data]
         return Response(
-            category_serializer.data,
+            {"category": category_list},
             status = status.HTTP_200_OK
         )
 
     def post(self, request):
         serializer = CategorySerializer(data=request.data)
+        category_name = request.data["name"]
 
-        if serializer.is_valid():
-            serializer.save()
+        if Category.objects.filter(name__icontains=category_name).exists():
             return Response(
-                serializer.data,
-                status = status.HTTP_201_CREATED
+                {"message": "category name already exists!"}
             )
+            
         else:
-            return Response(
-                serializer.errors,
-                status = status.HTTP_400_BAD_REQUEST
-            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    serializer.data,
+                    status = status.HTTP_201_CREATED
+                )
+
+            else:
+                return Response(
+                    serializer.errors,
+                    status = status.HTTP_400_BAD_REQUEST
+                )

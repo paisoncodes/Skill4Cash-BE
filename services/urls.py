@@ -3,9 +3,9 @@ from django.urls import path
 from .views import (
     CreateReadReview,
     ReadSPReviews,
-    PickCategory,  
+    CreateReadCategory,  
 )
 
 urlpatterns = [
-    path("category/", PickCategory.as_view(), name="categories")
+    path("category/", CreateReadCategory.as_view(), name="categories")
 ]
