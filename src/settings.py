@@ -59,7 +59,10 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     
     'authentication.apps.AuthConfig',
-    'services'
+    'services',
+    'otp.apps.OtpConfig',
+
+
 ]
 
 SITE_ID=1
