@@ -1,16 +1,13 @@
-import phonenumbers
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from phonenumber_field.serializerfields import PhoneNumberField
-from . import models
+from .models import User, RoleEnum, ServiceProvider
 
 
 class CustomerRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
             required=True,
-            validators=[UniqueValidator(queryset=models.User.objects.all())]
+            validators=[UniqueValidator(queryset=User.objects.all())]
             )
 
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
@@ -18,8 +15,8 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
 
     
     class Meta:
-        model = models.User
-        fields = ('password', 'confirm_password', 'email', 'first_name', 'last_name', 'phone_number','location','role','is_verified')
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'phone_number', 'password', 'confirm_password', 'location')
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True}
@@ -33,8 +30,15 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
         return attrs
     
     def create(self, validated_data):
-        del validated_data['confirm_password']
-        user = models.User.objects.create_user(role=models.RoleEnum.CUSTOMER.value, **validated_data)
+        # del validated_data['confirm_password']
+        user = User.objects.create(
+            email=validated_data["email"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            phone_number=validated_data["phone_number"],
+            location=validated_data["location"],
+            role=RoleEnum.CUSTOMER.value
+        )
         user.save()
 
         return user
@@ -42,7 +46,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
 class SPRegistrationSerializer(serializers.ModelSerializer):
     user = CustomerRegistrationSerializer()
     class Meta:
-        model = models.ServiceProvider
+        model = ServiceProvider
         fields = ('user', 'business_name','is_verified')
         read_only_fields = ['is_verified']
         extra_kwargs = {
@@ -53,8 +57,8 @@ class SPRegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-        del user_data['password2']
-        user_obj = models.User.objects.create_user(**user_data, role = models.RoleEnum.SERVICE_PROVIDER.value)        
-        service_provider = models.ServiceProvider.objects.create(**validated_data, user=user_obj)
+        # del user_data['password2']
+        user_obj = User.objects.create_user(**user_data, role = RoleEnum.SERVICE_PROVIDER.value)        
+        service_provider = ServiceProvider.objects.create(**validated_data, user=user_obj)
         service_provider.save()
         return service_provider
