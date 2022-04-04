@@ -116,17 +116,27 @@ WSGI_APPLICATION = 'src.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+prod_db = dj_database_url.config(conn_max_age=500)
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DATABASE"),
-        "USER": config("USER_NAME"),
-        "PASSWORD": config("PASSWORD"),
-        "HOST": config("HOST"),
-        "PORT": config("PORT"),
-    }
+
+HEROKU = config("HEROKU", cast=bool)
+
+if HEROKU:
+    DATABASES = {
+    'default': prod_db
 }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DATABASE"),
+            "USER": config("USER_NAME"),
+            "PASSWORD": config("PASSWORD"),
+            "HOST": config("HOST"),
+            "PORT": config("PORT"),
+        }
+    }
+
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -185,8 +195,7 @@ SIMPLE_JWT = {
 }
 
 
-prod_db = dj_database_url.config(conn_max_age=500)
-DATABASES['default'].update(prod_db)
+
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
