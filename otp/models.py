@@ -14,4 +14,4 @@ class OTPVerification(models.Model):
     created      = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.otp} sent to {self.phone_num}'
+        return f'phone number verification is {self.is_validated}'
