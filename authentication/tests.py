@@ -24,5 +24,3 @@ class ServiceProviderAccountTest(APITestCase):
         self.assertEqual(type(data_response), dict)
         self.assertEqual(data_response["user"]['email'], data['user']["email"])
         self.assertEqual(data_response['is_verified'], False)
-        
-    
