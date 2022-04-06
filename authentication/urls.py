@@ -8,6 +8,12 @@ from .views import (
     VerifyEmail,
     GoogleLogin
 )
+
+from otp.views import ( 
+    OTPValidatePhoneView,
+    ReadUpdatePhoneView,  
+)
+
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView
@@ -19,6 +25,8 @@ urlpatterns = [
     path("customers/<str:id>/", CustomerRetrieveUpdateDelete.as_view()),
     path("sp/register/", ServiceProviderRegister.as_view()),
     path("sp/<str:id>/", ServiceProviderRetrieveUpdateDelete.as_view()),
+    path('otp/update/', ReadUpdatePhoneView.as_view(), name='ReadUpdatePhoneView'),
+    path("otp/verification/", OTPValidatePhoneView.as_view(), name='OTPValidatePhoneView'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("login/google/", GoogleLogin.as_view()), 
