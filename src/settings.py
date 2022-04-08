@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'authentication.apps.AuthConfig',
     'services',
     'otp.apps.OtpConfig',
+    'twilio',
 
 
 ]
