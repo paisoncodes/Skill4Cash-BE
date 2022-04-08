@@ -1,8 +1,7 @@
-from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.urls import reverse
 
-# Create your tests here.
 class ServiceProviderAccountTest(APITestCase):
     def test_create_account_success(self):
         data = {
@@ -24,3 +23,5 @@ class ServiceProviderAccountTest(APITestCase):
         self.assertEqual(type(data_response), dict)
         self.assertEqual(data_response["user"]['email'], data['user']["email"])
         self.assertEqual(data_response['is_verified'], False)
+
+

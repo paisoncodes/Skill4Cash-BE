@@ -1,5 +1,4 @@
 from src.utils import send_otp, otp_session
-from otp.models import OTPVerification
 from authentication.models import User
 from django.test import TestCase
 import unittest
@@ -31,16 +30,6 @@ class SendOtpTest(unittest.TestCase):
 
 
 class  OtpSessionTests(TestCase):
-
-	def setUp(self):
-		User.objects.create(
-		    email="jackfrost@yahoo.com",
-		    first_name="Jack",
-		    last_name="Frost",
-		    username="Jacky",
-		    phone_number="+234800000000",
-		    location='Ibadan, Nigeria',
-		)
 	
 	def test_otp_session_function(self):
 		"""
@@ -48,21 +37,14 @@ class  OtpSessionTests(TestCase):
 			with otp code and number respectively if there is no  
 			connnection error.
 		"""
-		user = User.objects.get(first_name__iexact='Jack')
-		ins = OTPVerification.objects.get(user=user)
-
-		result = otp_session(self.client, "+234000000000", ins)
-
+		result = otp_session(self.client, "+234000000000")
 		self.assertTrue(result)
 
 	def test_otp_session_function_wrong(self):
 		"""
-			Should return None.
+			Should return None if no phone number was given.
 		"""
-		user = User.objects.get(first_name__iexact='Jack')
-		ins = OTPVerification.objects.get(user=user)
-
-		result = otp_session(self.client, False, ins)
+		result = otp_session(self.client, False)
 
 		self.assertFalse(result)
 		self.assertIsNone(None)
