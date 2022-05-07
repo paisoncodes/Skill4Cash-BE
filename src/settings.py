@@ -120,23 +120,24 @@ WSGI_APPLICATION = 'src.wsgi.application'
 prod_db = dj_database_url.config(conn_max_age=500)
 
 
-# HEROKU = config("HEROKU", cast=bool)
+HEROKU = config("HEROKU", cast=bool)
 
-# if HEROKU:
-#     DATABASES = {
-#     'default': prod_db
-# }
-# else:
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DATABASE"),
-        "USER": config("USER_NAME"),
-        "PASSWORD": config("PASSWORD"),
-        "HOST": config("HOST"),
-        "PORT": config("PORT"),
-    }
+if HEROKU:
+    DATABASES = {
+    'default': prod_db
 }
+
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DATABASE"),
+            "USER": config("USER_NAME"),
+            "PASSWORD": config("PASSWORD"),
+            "HOST": config("HOST"),
+            "PORT": config("PORT"),
+        }
+    }
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
