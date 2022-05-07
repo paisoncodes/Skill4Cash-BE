@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import CustomerRegistrationSerializer, SPRegistrationSerializer
+from .serializers import (CustomerRegistrationSerializer,
+                          UserSerializer, SPRegistrationSerializer,)
 from .models import User, ServiceProvider
 from rest_framework_simplejwt.tokens import RefreshToken
 from src.utils import Utils, otp_session
@@ -14,11 +15,12 @@ from .permissions import PostReadAllPermission
 from django.core.exceptions import ObjectDoesNotExist
 import jwt
 
+from .models import User
+from random import choice
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
-
-
 
 
 class CustomerRegisterGetAll(APIView):
@@ -224,7 +226,7 @@ class VerifyEmail(APIView):
             user = User.objects.get(id=payload["user_id"])
 
             if not user.is_verified:
-                user.is_verified = True
+                user._is_verified = True
                 user.save()
 
             return Response(
@@ -319,7 +321,7 @@ class UpdatePhone(APIView):
 
         otp_code, new_number = request.data.get(
             'otp'), request.data.get('number')
-        user = User.objects.get(id=request.user.id)  
+        user = User.objects.get(id=request.user.id)
         print(user.is_verified)
         try:
             if not User.objects.filter(
@@ -364,13 +366,13 @@ class UpdatePhone(APIView):
                         'message': 'Invalid OTP!'
                     }
                     )
-            
+
             return Response({
-                    'status': status.HTTP_403_FORBIDDEN,
-                    'message': 'Phone number already Exist'
-                }
-                )
-        
+                'status': status.HTTP_403_FORBIDDEN,
+                'message': 'Phone number already Exist'
+            }
+            )
+
         except jwt.ExpiredSignatureError:
             return Response({
                 'status': status.HTTP_400_BAD_REQUEST,
@@ -385,6 +387,37 @@ class UpdatePhone(APIView):
             )
 
 
+class PopulateUser(APIView):
+
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+
+        name = ['JAMES PETER', 'JOHN DOE']
+        location = ['Lagos', 'Ibadan', 'Kano', 'Abeokuta', 'Benin']
+        role = ['customer', 'service_provider']
+
+        if not (users:= User.objects.all()):
+            
+            for x in range(1, 11):
+                names = choice(name).split()
+
+                User.objects.create(
+                    email=f"test{x}@yahoomail.com", 
+                    first_name=names[0],
+                    last_name=names[1], 
+                    username=f"username{x}",
+                    phone_number=f'090{x}-000-000{x}', 
+                    _is_verified=True,
+                    role=choice(role), 
+                    location=choice(location)
+                )
+        serialized = UserSerializer(users, many=True)
+        return Response(serialized.data)
+
+
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
+
+    # write a funtion that will create users using loop
