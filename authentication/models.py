@@ -12,22 +12,28 @@ from django.contrib.postgres.fields import ArrayField
 class RoleEnum(Enum):
     CUSTOMER = "customer"
     SERVICE_PROVIDER = "service_provider"
-    
+
     def __str__(self):
         return self.value
 
+
 class User(AbstractUser):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    username = models.CharField(max_length=100, default="s4k", blank=True, null=True)
+    username = models.CharField(
+        max_length=100, default="s4k", blank=True, null=True)
     phone_number = PhoneNumberField(unique=True)
-    is_verified = models.BooleanField(default=False)
-    role = models.CharField(max_length=20, choices=[(tag.name, tag.value) for tag in RoleEnum])
+    _is_verified = models.BooleanField(default=False)
+    role = models.CharField(max_length=20, choices=[
+                            (tag.name, tag.value) for tag in RoleEnum])
     location = models.CharField(max_length=100)
 
-    
+    phone_verification = models.BooleanField(default=False)
+    email_verification = models.BooleanField(default=False)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
@@ -38,16 +44,26 @@ class User(AbstractUser):
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
-    
-    
+    @property
+    def is_verified(self):
+
+        if (self.phone_verification or self.email_verification)\
+                and self._is_verified:
+            return True
+        return False
+
+
 class ServiceProvider(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, unique=True, editable=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_provider")
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, unique=True, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_provider")
     business_name = models.CharField(max_length=200, unique=True)
     service_category = models.CharField(max_length=200, blank=True, null=True)
     keywords = ArrayField(models.CharField(max_length=225), default=list)
     gallery = ArrayField(models.CharField(max_length=225), default=list)
     card_front = models.CharField(max_length=225, blank=True, null=True)
     card_back = models.CharField(max_length=225, blank=True, null=True)
-    pob = models.CharField(max_length=225, blank=True, null=True, verbose_name="Proof of business")
+    pob = models.CharField(max_length=225, blank=True,
+                           null=True, verbose_name="Proof of business")
     is_verified = models.BooleanField(default=False)

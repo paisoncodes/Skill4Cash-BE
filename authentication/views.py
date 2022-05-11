@@ -1,9 +1,10 @@
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import CustomerRegistrationSerializer, SPRegistrationSerializer
+from .serializers import (CustomerRegistrationSerializer,
+                          UserSerializer, SPRegistrationSerializer,)
 from .models import User, ServiceProvider
 from rest_framework_simplejwt.tokens import RefreshToken
-from src.utils import Utils
+from src.utils import Utils, otp_session
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
 from django.conf import settings
@@ -14,11 +15,12 @@ from .permissions import PostReadAllPermission
 from django.core.exceptions import ObjectDoesNotExist
 import jwt
 
+from .models import User
+from random import choice
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
-
-# Create your views here.
 
 
 class CustomerRegisterGetAll(APIView):
@@ -34,7 +36,7 @@ class CustomerRegisterGetAll(APIView):
             "data": users_serilizer.data,
         }
         return Response(data, status=status.HTTP_200_OK)
-        
+
     def post(self, request):
         serializer = CustomerRegistrationSerializer(data=request.data)
 
@@ -63,7 +65,7 @@ class CustomerRegisterGetAll(APIView):
 
             Utils.send_email(data)
 
-            return_data = dict(serializer.data)            
+            return_data = dict(serializer.data)
             return_data["verification_link"] = absolute_url
 
             return Response(return_data, status=status.HTTP_201_CREATED)
@@ -89,7 +91,8 @@ class CustomerRetrieveUpdateDelete(APIView):
     def put(self, id, request):
         customer = User.objects.get(id=id)
         if customer:
-            serializer = CustomerRegistrationSerializer(customer, data=request.data)
+            serializer = CustomerRegistrationSerializer(
+                customer, data=request.data)
             if serializer.is_valid():
                 serializer.save()
 
@@ -183,7 +186,8 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
     def put(self, id, request):
         service_provider = ServiceProvider.objects.get(id=id)
         if service_provider:
-            serializer = SPRegistrationSerializer(service_provider, data=request.data)
+            serializer = SPRegistrationSerializer(
+                service_provider, data=request.data)
             if serializer.is_valid():
                 serializer.save()
 
@@ -213,14 +217,16 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
 
 class VerifyEmail(APIView):
     permission_classes = (AllowAny,)
+
     def get(self, request):
         token = request.GET.get("token")
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=["HS256"])
             user = User.objects.get(id=payload["user_id"])
 
             if not user.is_verified:
-                user.is_verified = True
+                user._is_verified = True
                 user.save()
 
             return Response(
@@ -237,6 +243,181 @@ class VerifyEmail(APIView):
             )
 
 
+class VerifyPhone(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+
+        otp_code = request.data.get('otp')
+        user = User.objects.get(id=request.user.id)
+
+        serializer = CustomerRegistrationSerializer(user, many=False)
+        phone_number = serializer.data['phone_number']
+
+        try:
+            if not user.phone_verification:
+                if not 'code' in request.session.keys():
+                    sent_otp = otp_session(request, phone_number)
+                    if sent_otp:
+                        return Response({
+                            'status': status.HTTP_200_OK,
+                            'message': 'OTP sent successfully'
+                        }
+                        )
+                    return Response({
+                        'status': status.HTTP_400_BAD_REQUEST,
+                        "message": 'Sending OTP Error'
+                    }
+                    )
+                else:
+                    if otp_code:
+                        if str(otp_code) == str(request.session['code']):
+                            user.phone_verification = True
+                            user.save()
+
+                            request.session.clear()
+                            return Response({
+                                'status': status.HTTP_200_OK,
+                                'message': 'OTP Code Verified'
+                            }
+                            )
+                        request.session.clear()
+                        return Response({
+                            'status': status.HTTP_400_BAD_REQUEST,
+                            'message': 'OTP Incorrect!'
+                        }
+                        )
+                    request.session.clear()
+                    return Response({
+                        'status': status.HTTP_400_BAD_REQUEST,
+                        'message': 'Invalid OTP!'
+                    }
+                    )
+            return Response({
+                'status': status.HTTP_403_FORBIDDEN,
+                'message': 'Phone number already validated'
+            }
+            )
+        except jwt.ExpiredSignatureError:
+            return Response({
+                'status': status.HTTP_400_BAD_REQUEST,
+                "message": "Verification link expired"
+            }
+            )
+        except jwt.exceptions.DecodeError:
+            return Response({
+                'status': status.HTTP_400_BAD_REQUEST,
+                "message": "Invalid token",
+            }
+            )
+
+
+class UpdatePhone(APIView):
+
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request):
+
+        otp_code, new_number = request.data.get(
+            'otp'), request.data.get('number')
+        user = User.objects.get(id=request.user.id)
+        print(user.is_verified)
+        try:
+            if not User.objects.filter(
+                    phone_number__iexact=new_number).exists():
+
+                if not 'code' in request.session.keys():
+                    sent_otp = otp_session(request, new_number)
+                    if sent_otp:
+                        return Response({
+                            'status': status.HTTP_200_OK,
+                            'message': 'OTP sent successfully'
+                        }
+                        )
+                    return Response({
+                        'status': status.HTTP_400_BAD_REQUEST,
+                        "message": 'Sending OTP Error'
+                    }
+                    )
+
+                else:
+                    if otp_code:
+                        if str(otp_code) == str(request.session['code']):
+                            user.phone_verification = True
+                            user.phone_number = new_number
+                            user.save()
+
+                            request.session.clear()
+                            return Response({
+                                'status': status.HTTP_200_OK,
+                                'message': 'OTP Code Verified'
+                            }
+                            )
+                        request.session.clear()
+                        return Response({
+                            'status': status.HTTP_400_BAD_REQUEST,
+                            'message': 'OTP Incorrect!'
+                        }
+                        )
+                    request.session.clear()
+                    return Response({
+                        'status': status.HTTP_400_BAD_REQUEST,
+                        'message': 'Invalid OTP!'
+                    }
+                    )
+
+            return Response({
+                'status': status.HTTP_403_FORBIDDEN,
+                'message': 'Phone number already Exist'
+            }
+            )
+
+        except jwt.ExpiredSignatureError:
+            return Response({
+                'status': status.HTTP_400_BAD_REQUEST,
+                "message": "Verification link expired"
+            }
+            )
+        except jwt.exceptions.DecodeError:
+            return Response({
+                'status': status.HTTP_400_BAD_REQUEST,
+                "message": "Invalid token",
+            }
+            )
+
+
+class PopulateUser(APIView):
+
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+
+        name = ['JAMES PETER', 'JOHN DOE']
+        location = ['Lagos', 'Ibadan', 'Kano', 'Abeokuta', 'Benin']
+        role = ['customer', 'service_provider']
+
+        if not (users:= User.objects.all()):
+            
+            for x in range(1, 11):
+                names = choice(name).split()
+
+                User.objects.create(
+                    email=f"test{x}@yahoomail.com", 
+                    first_name=names[0],
+                    last_name=names[1], 
+                    username=f"username{x}",
+                    phone_number=f'090{x}-000-000{x}', 
+                    _is_verified=True,
+                    role=choice(role), 
+                    location=choice(location)
+                )
+        serialized = UserSerializer(users, many=True)
+        return Response(serialized.data)
+
+
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
+
+    # write a funtion that will create users using loop

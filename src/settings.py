@@ -60,8 +60,6 @@ INSTALLED_APPS = [
     
     'authentication.apps.AuthConfig',
     'services',
-    'otp.apps.OtpConfig',
-    'twilio',
 
 
 ]
@@ -129,6 +127,7 @@ if HEROKU:
     DATABASES = {
     'default': prod_db
 }
+
 else:
     DATABASES = {
         "default": {
