@@ -8,7 +8,9 @@ from .views import (
     VerifyEmail,
     VerifyPhone,
     UpdatePhone,
-    GoogleLogin
+    GoogleLogin,
+
+    PopulateUser
 )
 
 
@@ -28,5 +30,8 @@ urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("login/google/", GoogleLogin.as_view()), 
-    path('verify-email/', VerifyEmail.as_view(), name="verify_email")
+    path('verify-email/', VerifyEmail.as_view(), name="verify_email"),
+
+    # populating
+    path('populate/', PopulateUser.as_view(), name='populate-user')
 ]
