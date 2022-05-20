@@ -1,26 +1,29 @@
-from rest_framework import status
-from rest_framework.response import Response
-from .serializers import (CustomerRegistrationSerializer,
-                          UserSerializer, SPRegistrationSerializer,)
-from .models import User, ServiceProvider
-from rest_framework_simplejwt.tokens import RefreshToken
-from src.utils import Utils, otp_session
-from django.contrib.sites.shortcuts import get_current_site
-from django.urls import reverse
-from django.conf import settings
-from django.shortcuts import get_list_or_404
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from .permissions import PostReadAllPermission
-from django.core.exceptions import ObjectDoesNotExist
-import jwt
-
-from .models import User
+import uuid
 from random import choice
 
+import jwt
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import get_list_or_404
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from src.permissions import IsOwnerOrReadOnly
+from src.utils import Utils, otp_session
+from src.utils import Utils
+
+from .models import ServiceProvider, User
+from .permissions import PostReadAllPermission
+from .serializers import (CustomerRegistrationSerializer,
+                          SPRegistrationSerializer, UserSerializer)
 
 
 class CustomerRegisterGetAll(APIView):
@@ -414,6 +417,135 @@ class PopulateUser(APIView):
                 )
         serialized = UserSerializer(users, many=True)
         return Response(serialized.data)
+
+
+class ChangePassword(APIView):
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(
+            serializer.data,
+            status = status.HTTP_200_OK
+        )
+    
+    def put(self, request):
+        data = {}
+        old_password = request.data["old_password"]
+        password = request.data["password"]
+        password2 = request.data["password2"]
+
+        user_id = request.GET.get("user_id")
+
+        obj = User.objects.get(id=user_id)
+        self.check_object_permissions(request, obj)
+
+        # serializer = ChangePasswordSerializer(data=data)
+
+        email = request.user.email
+
+        user = authenticate(email=email, password=old_password)
+
+        if user:
+            password_validity = Utils.validate_password(password=password)
+            if password_validity["status"]:
+                if password == password2:
+                    user = User.objects.get(email=email)
+                    user.set_password(password)
+                    user.save()
+                    return Response(
+                        {"message": "Password changed successfully"},
+                        status = status.HTTP_202_ACCEPTED
+                    )
+                else:
+                    return Response(
+                    {"password": "passwords do not match"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            return Response(
+                {"password": password_validity["message"]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            return Response(
+                {"old password": "Incorrect password"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class ResetPasswordEmail(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        email = request.data["email"]
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email=email)
+
+            relative_link = reverse("reset_password")
+                    
+            current_site = get_current_site(request).domain
+
+            absolute_url = f"http://{current_site}{relative_link}"
+
+            email_body = f"Hi, {user.first_name},\n    Use the link below to verify your email.\n                 {absolute_url}"
+
+            data = {
+                "email_subject": "Verify your email",
+                "email_body": email_body,
+                "to_email": user.email
+            }
+
+            Utils.send_email(data)
+
+            return Response(
+                {
+                    "message": "Password Reset email sent",
+                    "Reset password link": absolute_url
+                },
+                status = status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"message": "Invalid user email"},
+                status = status.HTTP_406_NOT_ACCEPTABLE
+            )
+
+class ResetPassword(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        email = request.data["email"]
+        password = request.data["password"]
+        password2 = request.data["password2"]
+
+        password_validity = Utils.validate_password(password)
+        
+        if password_validity["status"]:
+            if password2 == password:
+                try:
+                    user = User.objects.get(email=email)
+                    user.set_password(password)
+                    user.save()
+
+                    return Response(
+                        {"message": "Password reset successful"},
+                        status = status.HTTP_200_OK
+                    )
+                except Exception as e:
+                    return Response(
+                        {"message": e},
+                        status = status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {"password": "Passwords do not match"},
+                    status = status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(
+                {"password": password_validity["message"]},
+                status = status.HTTP_400_BAD_REQUEST
+            )
 
 
 class GoogleLogin(SocialLoginView):
