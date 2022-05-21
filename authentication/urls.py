@@ -9,6 +9,9 @@ from .views import (
     VerifyPhone,
     UpdatePhone,
     GoogleLogin,
+    ChangePassword,
+    ResetPassword,
+    ResetPasswordEmail,
 
     PopulateUser
 )
@@ -31,6 +34,9 @@ urlpatterns = [
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("login/google/", GoogleLogin.as_view()), 
     path('verify-email/', VerifyEmail.as_view(), name="verify_email"),
+    path("change-password", ChangePassword.as_view()),
+    path("reset-password", ResetPassword.as_view()),
+    path("reset-password-email", ResetPasswordEmail.as_view()),
 
     # populating
     path('populate/', PopulateUser.as_view(), name='populate-user')

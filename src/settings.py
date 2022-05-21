@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'authentication.apps.AuthConfig',
     'services',
 
+
 ]
 
 SITE_ID=1

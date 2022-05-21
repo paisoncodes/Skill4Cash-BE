@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from django.contrib.auth.password_validation import validate_password
 from .models import User, RoleEnum, ServiceProvider
+from src.utils import Utils
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -13,13 +13,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 class CustomerRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
-
-    password = serializers.CharField(
-        write_only=True, required=True, validators=[validate_password])
+                required=True,
+                validators=[UniqueValidator(queryset=User.objects.all())]
+            )
+    password = serializers.CharField(write_only=True, required=True, validators=[Utils.validate_user_password], help_text = "Password must be at least 8 characters and must contain at least one uppercase letter, one smaller letter, one digit, and one special character.")
     confirm_password = serializers.CharField(write_only=True, required=True)
+
 
     class Meta:
         model = User
