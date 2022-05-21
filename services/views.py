@@ -99,7 +99,8 @@ class CreateReadCategory(APIView):
         serializer = CategorySerializer(data=request.data)
         category_name = request.data["name"]
 
-        if Category.objects.filter(name__icontains=category_name).exists():
+        category = Category.objects.filter(name__icontains=category_name)
+        if category.exists():
             return Response(
                 {"message": "category name already exists!"}
             )

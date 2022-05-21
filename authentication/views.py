@@ -397,19 +397,19 @@ class PopulateUser(APIView):
         location = ['Lagos', 'Ibadan', 'Kano', 'Abeokuta', 'Benin']
         role = ['customer', 'service_provider']
 
-        if not (users:= User.objects.all()):
-            
+        if not (users := User.objects.all()):
+
             for x in range(1, 11):
                 names = choice(name).split()
 
                 User.objects.create(
-                    email=f"test{x}@yahoomail.com", 
+                    email=f"test{x}@yahoomail.com",
                     first_name=names[0],
-                    last_name=names[1], 
+                    last_name=names[1],
                     username=f"username{x}",
-                    phone_number=f'090{x}-000-000{x}', 
+                    phone_number=f'090{x}-000-000{x}',
                     _is_verified=True,
-                    role=choice(role), 
+                    role=choice(role),
                     location=choice(location)
                 )
         serialized = UserSerializer(users, many=True)
@@ -419,5 +419,3 @@ class PopulateUser(APIView):
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
-
-    # write a funtion that will create users using loop
