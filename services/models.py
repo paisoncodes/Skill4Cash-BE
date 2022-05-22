@@ -25,3 +25,12 @@ class Rating(models.Model):
     review = models.TextField()
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     rated_at = models.DateTimeField(auto_now_add=True)
+
+class Schedule(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
+    title = models.CharField(max_length=225)
+    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name="schedule")
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
+    date_and_time = models.DateTimeField()
+    detail = models.TextField()
+
