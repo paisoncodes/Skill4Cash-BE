@@ -8,29 +8,40 @@ from authentication.models import ServiceProvider, User
 
 
 class Category(models.Model):
-    id = models.UUIDField(primary_key=True, unique=True, editable=False, default=uuid.uuid4)
+    id = models.UUIDField(primary_key=True, unique=True,
+                          editable=False, default=uuid.uuid4)
     name = models.CharField(max_length=225, unique=True)
 
     class Meta:
         verbose_name_plural = "Categories"
-    
+
     def __str__(self) -> str:
         return self.name
 
 
 class Rating(models.Model):
-    id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
-    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name="rating")
+    id = models.UUIDField(primary_key=True, editable=False,
+                          unique=True, default=uuid.uuid4)
+    service_provider = models.ForeignKey(
+        ServiceProvider, on_delete=models.CASCADE, related_name="rating")
     rating = models.PositiveIntegerField()
     review = models.TextField()
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     rated_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self) -> str:
+        return str(self.rating)
+
+
 class Schedule(models.Model):
-    id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
+    id = models.UUIDField(primary_key=True, editable=False,
+                          unique=True, default=uuid.uuid4)
     title = models.CharField(max_length=225)
-    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name="schedule")
+    service_provider = models.ForeignKey(
+        ServiceProvider, on_delete=models.CASCADE, related_name="schedule")
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     date_and_time = models.DateTimeField()
     detail = models.TextField()
 
+    def __str__(self) -> str:
+        return self.title
