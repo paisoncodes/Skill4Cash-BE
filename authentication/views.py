@@ -28,7 +28,6 @@ from .serializers import (CustomerRegistrationSerializer,
 
 class CustomerRegisterGetAll(APIView):
     # permission_classes = (PostReadAllPermission,)
-    queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
 
     def get(self, request):
@@ -124,15 +123,14 @@ class CustomerRetrieveUpdateDelete(APIView):
 
 
 class ServiceProviderRegister(APIView):
-    queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
-    permission_classes = (PostReadAllPermission,)
+    # permission_classes = (PostReadAllPermission,)
 
     def get(self, request):
         users_objs = get_list_or_404(User, role="service_provider")
         users_serilizer = CustomerRegistrationSerializer(users_objs, many=True)
         data = {
-            "message": "Successfully retrieved customers",
+            "message": "Successfully retrieved sp-customers",
             "data": users_serilizer.data,
         }
         return Response(data, status=status.HTTP_200_OK)
@@ -419,6 +417,26 @@ class PopulateUser(APIView):
         return Response(serialized.data)
 
 
+class PopulateSP(APIView):
+
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        name = ['Electrician', 'FashionDesigner', 'WebDeveloper',
+                'Marketer', 'Promoter', 'Teacher', ]
+        sp = User.objects.filter(role='service_provider')
+        print(sp.count())
+        if not ServiceProvider.objects.all():
+            for x in range(sp.count()):
+                ServiceProvider.objects.create(
+                    user=sp[x],
+                    business_name=name[x],
+                    is_verified=True,
+                )
+
+        return Response({'message': 'SP data populated sucessfully.'})
+
+
 class ChangePassword(APIView):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
 
@@ -427,9 +445,9 @@ class ChangePassword(APIView):
         serializer = UserSerializer(user)
         return Response(
             serializer.data,
-            status = status.HTTP_200_OK
+            status=status.HTTP_200_OK
         )
-    
+
     def put(self, request):
         data = {}
         old_password = request.data["old_password"]
@@ -456,13 +474,13 @@ class ChangePassword(APIView):
                     user.save()
                     return Response(
                         {"message": "Password changed successfully"},
-                        status = status.HTTP_202_ACCEPTED
+                        status=status.HTTP_202_ACCEPTED
                     )
                 else:
                     return Response(
-                    {"password": "passwords do not match"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                        {"password": "passwords do not match"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             return Response(
                 {"password": password_validity["message"]},
                 status=status.HTTP_400_BAD_REQUEST
@@ -473,6 +491,7 @@ class ChangePassword(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
 class ResetPasswordEmail(APIView):
     permission_classes = (AllowAny,)
 
@@ -482,7 +501,7 @@ class ResetPasswordEmail(APIView):
             user = User.objects.get(email=email)
 
             relative_link = reverse("reset_password")
-                    
+
             current_site = get_current_site(request).domain
 
             absolute_url = f"http://{current_site}{relative_link}"
@@ -502,13 +521,14 @@ class ResetPasswordEmail(APIView):
                     "message": "Password Reset email sent",
                     "Reset password link": absolute_url
                 },
-                status = status.HTTP_200_OK
+                status=status.HTTP_200_OK
             )
         else:
             return Response(
                 {"message": "Invalid user email"},
-                status = status.HTTP_406_NOT_ACCEPTABLE
+                status=status.HTTP_406_NOT_ACCEPTABLE
             )
+
 
 class ResetPassword(APIView):
     permission_classes = (AllowAny,)
@@ -519,7 +539,7 @@ class ResetPassword(APIView):
         password2 = request.data["password2"]
 
         password_validity = Utils.validate_password(password)
-        
+
         if password_validity["status"]:
             if password2 == password:
                 try:
@@ -529,22 +549,22 @@ class ResetPassword(APIView):
 
                     return Response(
                         {"message": "Password reset successful"},
-                        status = status.HTTP_200_OK
+                        status=status.HTTP_200_OK
                     )
                 except Exception as e:
                     return Response(
                         {"message": e},
-                        status = status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST
                     )
             else:
                 return Response(
                     {"password": "Passwords do not match"},
-                    status = status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST
                 )
         else:
             return Response(
                 {"password": password_validity["message"]},
-                status = status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST
             )
 
 

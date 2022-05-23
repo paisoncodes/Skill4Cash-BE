@@ -13,7 +13,8 @@ from .views import (
     ResetPassword,
     ResetPasswordEmail,
 
-    PopulateUser
+    PopulateUser,
+    PopulateSP
 )
 
 
@@ -32,12 +33,13 @@ urlpatterns = [
     path("otp/verification/", VerifyPhone.as_view(), name='VerifyPhone'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path("login/google/", GoogleLogin.as_view()), 
+    path("login/google/", GoogleLogin.as_view()),
     path('verify-email/', VerifyEmail.as_view(), name="verify_email"),
     path("change-password", ChangePassword.as_view()),
     path("reset-password", ResetPassword.as_view()),
     path("reset-password-email", ResetPasswordEmail.as_view()),
 
     # populating
-    path('populate/', PopulateUser.as_view(), name='populate-user')
+    path('populate/', PopulateUser.as_view(),),
+    path('populate-sp/', PopulateSP.as_view(),)
 ]
