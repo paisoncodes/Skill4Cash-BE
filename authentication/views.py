@@ -1,7 +1,7 @@
-import uuid
-from random import choice
 
+from random import choice
 import jwt
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -27,7 +27,7 @@ from .serializers import (CustomerRegistrationSerializer,
 
 
 class CustomerRegisterGetAll(APIView):
-    # permission_classes = (PostReadAllPermission,)
+    permission_classes = (PostReadAllPermission,)
     serializer_class = CustomerRegistrationSerializer
 
     def get(self, request):
@@ -77,27 +77,32 @@ class CustomerRegisterGetAll(APIView):
 
 # Not in use yet. Still needs to be fixed.
 class CustomerRetrieveUpdateDelete(APIView):
-    queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
     permission_classes = (IsAuthenticated,)
 
+    def get_object(self, id):
+        try:
+            return User.objects.get(id=id)
+        except User.DoesNotExist:
+            return None
+
     def get(self, id, request):
 
-        customer = User.objects.get(id=id)
-        serializer = CustomerRegistrationSerializer(customer)
-        if customer:
+        if (customer := self.get_object(id=id)):
+            serializer = CustomerRegistrationSerializer(customer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+            )
 
     def put(self, id, request):
-        customer = User.objects.get(id=id)
-        if customer:
+
+        if (customer := self.get_object(id=id)):
             serializer = CustomerRegistrationSerializer(
                 customer, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -107,14 +112,11 @@ class CustomerRetrieveUpdateDelete(APIView):
             )
 
     def delete(self, id, request):
-        customer = User.objects.get(id=id)
-        if customer:
+        if (customer := self.get_object(id=id)):
             customer.delete()
             return Response(
-                {
-                    "message": "User deleted successfully",
-                    "status": status.HTTP_204_NO_CONTENT,
-                }
+                {"message": "User deleted successfully",
+                    "status": status.HTTP_204_NO_CONTENT, }
             )
         else:
             return Response(
@@ -124,7 +126,7 @@ class CustomerRetrieveUpdateDelete(APIView):
 
 class ServiceProviderRegister(APIView):
     serializer_class = SPRegistrationSerializer
-    # permission_classes = (PostReadAllPermission,)
+    permission_classes = (PostReadAllPermission,)
 
     def get(self, request):
         users_objs = get_list_or_404(User, role="service_provider")
@@ -169,29 +171,36 @@ class ServiceProviderRegister(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 # Not in use yet. Still needs to be fixed.
+
+
 class ServiceProviderRetrieveUpdateDelete(APIView):
     queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
 
+    def get_object(self, id):
+        try:
+            return ServiceProvider.objects.get(id=id)
+        except User.DoesNotExist:
+            return None
+
     def get(self, id, request):
 
-        service_provider = ServiceProvider.objects.get(id=id)
-        serializer = SPRegistrationSerializer(service_provider)
-        if service_provider:
+        if (service_provider := self.get_object(id=id)):
+            serializer = SPRegistrationSerializer(service_provider)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+
+            )
 
     def put(self, id, request):
-        service_provider = ServiceProvider.objects.get(id=id)
-        if service_provider:
+        if (service_provider := self.get_object(id=id)):
             serializer = SPRegistrationSerializer(
                 service_provider, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -201,16 +210,14 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             )
 
     def delete(self, id, request):
-        try:
-            service_provider = ServiceProvider.objects.get(id=id)
+
+        if (service_provider := self.get_object(id=id)):
             service_provider.delete()
             return Response(
-                {
-                    "message": "User deleted successfully",
-                    "status": status.HTTP_204_NO_CONTENT,
-                }
+                {"message": "User deleted successfully",
+                    "status": status.HTTP_204_NO_CONTENT, }
             )
-        except ObjectDoesNotExist:
+        else:
             return Response(
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
