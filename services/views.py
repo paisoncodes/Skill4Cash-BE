@@ -26,7 +26,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 class CreateReadReview(APIView):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = RatingSerializer
     ratings = Rating.objects.all()
 
@@ -62,7 +62,7 @@ class CreateReadReview(APIView):
 
 
 class ReadSPReviews(APIView):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     queryset = Rating.objects.all()
 
     def get(self, request):
@@ -91,7 +91,7 @@ class ReadSPReviews(APIView):
 
 
 class CreateReadCategory(APIView):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = CategorySerializer
     category = Category.objects.all()
 
@@ -131,7 +131,7 @@ class CreateReadCategory(APIView):
 
 class CreateReadSchedule(APIView):
     serializer_class = ScheduleSerializer
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     schedules = Schedule.objects.all()
 
     def get(self, request):
@@ -202,7 +202,7 @@ class ReadUpdateDeleteSchedule(APIView):
 
         if (schedule := self.get_object(id)):
 
-            if not schedule.service_provider.user == request.user:
+            if schedule.service_provider.user == request.user:
                 serialized_schedule = ScheduleSerializer(schedule, many=False)
 
                 return Response(
@@ -222,17 +222,16 @@ class ReadUpdateDeleteSchedule(APIView):
 
         if (schedule := self.get_object(id)):
 
-            if not schedule.service_provider.user == request.user:
-                title = request.data["title"]
-                customer = request.data['customer']
-                date_time = request.data['date_and_time']
-                detail = request.data["detail"]
-                service_provider = request.data["service_provider"]
+            if schedule.service_provider.user == request.user:
+                customer = request.data['customer'] if request.data['customer'] else schedule.customer
+                service_provider = request.data["service_provider"] if request.data['customer'] else schedule.service_provider
 
                 serialized_schedule = ScheduleSerializer(
                     schedule, data=request.data)
+
                 if serialized_schedule.is_valid():
                     serialized_schedule.save()
+
                     return Response(
                         serialized_schedule.data,
                         status=status.HTTP_200_OK
