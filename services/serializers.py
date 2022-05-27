@@ -12,7 +12,7 @@ class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
         fields = ("service_provider", "rating", "review", "customer")
-        read_only_fields = ["id",]
+        read_only_fields = ("id",)
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,5 +22,5 @@ class CategorySerializer(serializers.ModelSerializer):
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
-        fields = ["title", "customer", "date_and_time", "detail", "service_provider"]
-        read_only_fields = ['id',]
+        fields = ("title", "customer", "date_and_time", "detail", "service_provider")
+        read_only_fields = ('id',)
