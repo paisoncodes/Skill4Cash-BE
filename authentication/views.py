@@ -19,6 +19,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from src.permissions import IsOwnerOrReadOnly
 from src.utils import Utils, otp_session
 from src.utils import Utils
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import ServiceProvider, User
 from .permissions import PostReadAllPermission
@@ -40,6 +41,7 @@ class CustomerRegisterGetAll(APIView):
         }
         return Response(data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         serializer = CustomerRegistrationSerializer(data=request.data)
 
@@ -90,7 +92,8 @@ class CustomerRetrieveUpdateDelete(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
-
+    
+    @swagger_auto_schema(request_body=serializer_class)
     def put(self, id, request):
         customer = User.objects.get(id=id)
         if customer:
@@ -137,6 +140,7 @@ class ServiceProviderRegister(APIView):
         }
         return Response(data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         serializer = SPRegistrationSerializer(data=request.data)
 
@@ -186,6 +190,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
 
+    @swagger_auto_schema(request_body=serializer_class)
     def put(self, id, request):
         service_provider = ServiceProvider.objects.get(id=id)
         if service_provider:
@@ -249,7 +254,9 @@ class VerifyEmail(APIView):
 class VerifyPhone(APIView):
 
     permission_classes = (IsAuthenticated,)
+    serializer_class = CustomerRegistrationSerializer
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
 
         otp_code = request.data.get('otp')
@@ -421,6 +428,7 @@ class PopulateUser(APIView):
 
 class ChangePassword(APIView):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    
 
     def get(self, request):
         user = request.user

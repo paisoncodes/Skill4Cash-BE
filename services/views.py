@@ -21,6 +21,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
+from drf_yasg.utils import swagger_auto_schema
 
 
 
@@ -39,6 +40,7 @@ class CreateReadReview(APIView):
             status = status.HTTP_200_OK
         )
     
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         try:
             request.data["customer"] = User.objects.get(id=request.data["customer"])
@@ -101,6 +103,7 @@ class CreateReadCategory(APIView):
             status = status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         serializer = CategorySerializer(data=request.data)
         category_name = request.data["name"]
@@ -132,6 +135,7 @@ class CreateReadSchedule(APIView):
         schedules = ScheduleSerializer(data=self.schedules, many=True)
         return Response(schedules.data, status=status.HTTP_200_OK)
     
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         try:
             request.data["customer"] = User.objects.get(id=request.data["customer"])
@@ -197,6 +201,7 @@ class ReadUpdateDeleteSchedule(APIView):
         except Exception as e:
             return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
     
+    @swagger_auto_schema(request_body=serializer_class)
     def put(self, request, id):
         try:
             schedule = Schedule.objects.get(id=id)
