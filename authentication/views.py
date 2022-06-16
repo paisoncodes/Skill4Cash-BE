@@ -23,6 +23,7 @@ from src.utils import Utils
 from .models import ServiceProvider, User
 from .permissions import PostReadAllPermission
 from .serializers import (CustomerRegistrationSerializer,
+                            CustomerRegistrationSerializerUpdate,
                           SPRegistrationSerializer, UserSerializer)
 
 
@@ -46,18 +47,16 @@ class CustomerRegisterGetAll(APIView):
             serializer.save()
 
             user_data = serializer.data
-
             user = User.objects.get(email=user_data["email"])
-
             token = RefreshToken.for_user(user).access_token
-
             relative_link = reverse("verify_email")
-
             current_site = get_current_site(request).domain
-
             absolute_url = f"http://{current_site}{relative_link}?token={str(token)}"
-
-            email_body = f"Hi, {user.first_name},\n    Use the link below to verify your email.\n              {absolute_url}"
+            email_body = f"""
+                        <h2>Hi, <small>{user.first_name}</small></h2>    
+                        <h4>Use the link below to verify your email.</h4>
+                        <p>{absolute_url}</p>
+                        """
 
             data = {
                 "email_subject": "Verify your email",
@@ -65,7 +64,8 @@ class CustomerRegisterGetAll(APIView):
                 "to_email": user.email,
             }
 
-            Utils.send_email(data)
+            # result a message id, if sent successfully
+            Utils.sending_email(data)
 
             return_data = dict(serializer.data)
             return_data["verification_link"] = absolute_url
@@ -74,32 +74,30 @@ class CustomerRegisterGetAll(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-# Not in use yet. Still needs to be fixed.
 class CustomerRetrieveUpdateDelete(APIView):
-    serializer_class = CustomerRegistrationSerializer
+    serializer_class = CustomerRegistrationSerializerUpdate
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, id):
         try:
-            return User.objects.get(id=id)
+            return User.objects.get(pk=id)
         except User.DoesNotExist:
             return None
 
-    def get(self, id, request):
+    def get(self, request, id ):
 
-        if (customer := self.get_object(id=id)):
-            serializer = CustomerRegistrationSerializer(customer)
+        if (customer := self.get_object(id)):
+            serializer = CustomerRegistrationSerializerUpdate(customer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
 
-    def put(self, id, request):
+    def put(self, request, id):
 
-        if (customer := self.get_object(id=id)):
-            serializer = CustomerRegistrationSerializer(
+        if (customer := self.get_object(id)):
+            serializer = CustomerRegistrationSerializerUpdate(
                 customer, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -111,8 +109,8 @@ class CustomerRetrieveUpdateDelete(APIView):
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
 
-    def delete(self, id, request):
-        if (customer := self.get_object(id=id)):
+    def delete(self, request, id):
+        if (customer := self.get_object(id)):
             customer.delete()
             return Response(
                 {"message": "User deleted successfully",
@@ -123,14 +121,13 @@ class CustomerRetrieveUpdateDelete(APIView):
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
 
-
 class ServiceProviderRegister(APIView):
     serializer_class = SPRegistrationSerializer
     permission_classes = (PostReadAllPermission,)
 
     def get(self, request):
-        users_objs = get_list_or_404(User, role="service_provider")
-        users_serilizer = CustomerRegistrationSerializer(users_objs, many=True)
+        users_objs = get_list_or_404(ServiceProvider, user__role="service_provider")
+        users_serilizer = SPRegistrationSerializer(users_objs, many=True)
         data = {
             "message": "Successfully retrieved sp-customers",
             "data": users_serilizer.data,
@@ -154,15 +151,20 @@ class ServiceProviderRegister(APIView):
 
             absolute_url = f"http://{current_site}{relative_link}?token={str(token)}"
 
-            email_body = f"Hi, {user.first_name},\n    Use the link below to verify your email.\n              {absolute_url}"
+            email_body = f"""
+                        <h2>Hi, <small>{user.first_name}</small></h2>    
+                        <h4>Use the link below to verify your email.</h4>
+                        <p>{absolute_url}</p>
 
+                        """
             data = {
                 "email_subject": "Verify your email",
                 "email_body": email_body,
                 "to_email": user.email,
             }
 
-            Utils.send_email(data)
+            # result a message id, if sent successfully
+            Utils.sending_email(data)
 
             return_data = dict(serializer.data)
             return_data["verification_link"] = absolute_url
@@ -171,22 +173,20 @@ class ServiceProviderRegister(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Not in use yet. Still needs to be fixed.
-
 
 class ServiceProviderRetrieveUpdateDelete(APIView):
-    queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_object(self, id):
         try:
-            return ServiceProvider.objects.get(id=id)
-        except User.DoesNotExist:
+            return ServiceProvider.objects.get(pk=id)
+        except ServiceProvider.DoesNotExist:
             return None
 
-    def get(self, id, request):
+    def get(self, request, id):
 
-        if (service_provider := self.get_object(id=id)):
+        if (service_provider := self.get_object(id)):
             serializer = SPRegistrationSerializer(service_provider)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -195,8 +195,8 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
 
             )
 
-    def put(self, id, request):
-        if (service_provider := self.get_object(id=id)):
+    def put(self, request, id):
+        if (service_provider := self.get_object(id)):
             serializer = SPRegistrationSerializer(
                 service_provider, data=request.data)
             if serializer.is_valid():
@@ -209,9 +209,9 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
 
-    def delete(self, id, request):
+    def delete(self, request, id):
 
-        if (service_provider := self.get_object(id=id)):
+        if (service_provider := self.get_object(id)):
             service_provider.delete()
             return Response(
                 {"message": "User deleted successfully",
@@ -235,6 +235,7 @@ class VerifyEmail(APIView):
 
             if not user.is_verified:
                 user._is_verified = True
+                user.email_verification = True
                 user.save()
 
             return Response(
@@ -432,7 +433,7 @@ class PopulateSP(APIView):
         name = ['Electrician', 'FashionDesigner', 'WebDeveloper',
                 'Marketer', 'Promoter', 'Teacher', ]
         sp = User.objects.filter(role='service_provider')
-        print(sp.count())
+
         if not ServiceProvider.objects.all():
             for x in range(sp.count()):
                 ServiceProvider.objects.create(
@@ -513,15 +514,19 @@ class ResetPasswordEmail(APIView):
 
             absolute_url = f"http://{current_site}{relative_link}"
 
-            email_body = f"Hi, {user.first_name},\n    Use the link below to verify your email.\n                 {absolute_url}"
-
+            email_body = f"""
+                        <h2>Hi, <small>{user.first_name}</small></h2>    
+                        <h4>Use the link below to verify your email.</h4>
+                        <p>{absolute_url}</p>
+                        
+                        """
             data = {
                 "email_subject": "Verify your email",
                 "email_body": email_body,
                 "to_email": user.email
             }
 
-            Utils.send_email(data)
+            Utils.sending_email(data)
 
             return Response(
                 {

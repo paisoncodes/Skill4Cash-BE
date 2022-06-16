@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 from rest_framework.validators import UniqueValidator
 from .models import User, RoleEnum, ServiceProvider
 from src.utils import Utils
@@ -13,51 +14,91 @@ class UserSerializer(serializers.ModelSerializer):
 
 class CustomerRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
-                required=True,
-                validators=[UniqueValidator(queryset=User.objects.all())]
-            )
-    password = serializers.CharField(write_only=True, required=True, validators=[Utils.validate_user_password], help_text = "Password must be at least 8 characters and must contain at least one uppercase letter, one smaller letter, one digit, and one special character.")
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+    )
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[Utils.validate_user_password],
+        help_text=""" Password must be at least 8 characters 
+                        and must contain at least one uppercase letter, 
+                        one smaller letter, one digit, and one special character.
+                    """)
     confirm_password = serializers.CharField(write_only=True, required=True)
-
 
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'phone_number',
-                  'password', 'confirm_password', 'location')
+        fields = (
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'phone_number',
+            'password',
+            'confirm_password',
+            'location',
+            'is_verified',
+            'email_verification',
+            'phone_verification',
+            'role'
+        )
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True}
         }
-        read_only_fields = ['is_verified', 'role']
+        read_only_fields = ['is_verified', 'role',
+                            'email_verification', 'phone_verification']
 
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError(
                 {"Password": "Password fields didn't match."})
-
         return attrs
 
     def create(self, validated_data):
-        # del validated_data['confirm_password']
+        del validated_data['password']
+        del validated_data['confirm_password']
         user = User.objects.create(
-            email=validated_data["email"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
-            phone_number=validated_data["phone_number"],
-            location=validated_data["location"],
-            role=RoleEnum.CUSTOMER.value
+            **validated_data, role=RoleEnum.CUSTOMER.value
         )
-        user.save()
-
         return user
+
+
+class CustomerRegistrationSerializerUpdate(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'location',
+            'is_verified',
+            'email_verification',
+            'phone_verification',
+            'role'
+        )
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True}
+        }
+        read_only_fields = ['is_verified', 'role',
+                            'email_verification', 'phone_verification']
 
 
 class SPRegistrationSerializer(serializers.ModelSerializer):
     user = CustomerRegistrationSerializer()
+    sp_id = serializers.CharField(source='pk', read_only=True)
 
     class Meta:
         model = ServiceProvider
-        fields = ('user', 'business_name', 'is_verified')
+        fields = ('user', 'sp_id', 'business_name', 'is_verified')
         read_only_fields = ['is_verified']
         extra_kwargs = {
             'first_name': {'required': True},
