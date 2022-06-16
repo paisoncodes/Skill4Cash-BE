@@ -67,3 +67,6 @@ class ServiceProvider(models.Model):
     pob = models.CharField(max_length=225, blank=True,
                            null=True, verbose_name="Proof of business")
     is_verified = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.business_name

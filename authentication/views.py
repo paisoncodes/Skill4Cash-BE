@@ -1,7 +1,7 @@
-import uuid
-from random import choice
 
+from random import choice
 import jwt
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -28,8 +28,7 @@ from .serializers import (CustomerRegistrationSerializer,
 
 
 class CustomerRegisterGetAll(APIView):
-    # permission_classes = (PostReadAllPermission,)
-    queryset = User.objects.all()
+    permission_classes = (PostReadAllPermission,)
     serializer_class = CustomerRegistrationSerializer
 
     def get(self, request):
@@ -80,28 +79,33 @@ class CustomerRegisterGetAll(APIView):
 
 # Not in use yet. Still needs to be fixed.
 class CustomerRetrieveUpdateDelete(APIView):
-    queryset = User.objects.all()
     serializer_class = CustomerRegistrationSerializer
     permission_classes = (IsAuthenticated,)
 
+    def get_object(self, id):
+        try:
+            return User.objects.get(id=id)
+        except User.DoesNotExist:
+            return None
+
     def get(self, id, request):
 
-        customer = User.objects.get(id=id)
-        serializer = CustomerRegistrationSerializer(customer)
-        if customer:
+        if (customer := self.get_object(id=id)):
+            serializer = CustomerRegistrationSerializer(customer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
-    
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+            )
+            
     @swagger_auto_schema(request_body=serializer_class)
     def put(self, id, request):
-        customer = User.objects.get(id=id)
-        if customer:
+
+        if (customer := self.get_object(id=id)):
             serializer = CustomerRegistrationSerializer(
                 customer, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -111,14 +115,11 @@ class CustomerRetrieveUpdateDelete(APIView):
             )
 
     def delete(self, id, request):
-        customer = User.objects.get(id=id)
-        if customer:
+        if (customer := self.get_object(id=id)):
             customer.delete()
             return Response(
-                {
-                    "message": "User deleted successfully",
-                    "status": status.HTTP_204_NO_CONTENT,
-                }
+                {"message": "User deleted successfully",
+                    "status": status.HTTP_204_NO_CONTENT, }
             )
         else:
             return Response(
@@ -127,7 +128,6 @@ class CustomerRetrieveUpdateDelete(APIView):
 
 
 class ServiceProviderRegister(APIView):
-    queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
     permission_classes = (PostReadAllPermission,)
 
@@ -135,7 +135,7 @@ class ServiceProviderRegister(APIView):
         users_objs = get_list_or_404(User, role="service_provider")
         users_serilizer = CustomerRegistrationSerializer(users_objs, many=True)
         data = {
-            "message": "Successfully retrieved customers",
+            "message": "Successfully retrieved sp-customers",
             "data": users_serilizer.data,
         }
         return Response(data, status=status.HTTP_200_OK)
@@ -175,30 +175,37 @@ class ServiceProviderRegister(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 # Not in use yet. Still needs to be fixed.
+
+
 class ServiceProviderRetrieveUpdateDelete(APIView):
     queryset = ServiceProvider.objects.all()
     serializer_class = SPRegistrationSerializer
 
+    def get_object(self, id):
+        try:
+            return ServiceProvider.objects.get(id=id)
+        except User.DoesNotExist:
+            return None
+
     def get(self, id, request):
 
-        service_provider = ServiceProvider.objects.get(id=id)
-        serializer = SPRegistrationSerializer(service_provider)
-        if service_provider:
+        if (service_provider := self.get_object(id=id)):
+            serializer = SPRegistrationSerializer(service_provider)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+
+            )
 
     @swagger_auto_schema(request_body=serializer_class)
     def put(self, id, request):
-        service_provider = ServiceProvider.objects.get(id=id)
-        if service_provider:
+        if (service_provider := self.get_object(id=id)):
             serializer = SPRegistrationSerializer(
                 service_provider, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -208,16 +215,14 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             )
 
     def delete(self, id, request):
-        try:
-            service_provider = ServiceProvider.objects.get(id=id)
+
+        if (service_provider := self.get_object(id=id)):
             service_provider.delete()
             return Response(
-                {
-                    "message": "User deleted successfully",
-                    "status": status.HTTP_204_NO_CONTENT,
-                }
+                {"message": "User deleted successfully",
+                    "status": status.HTTP_204_NO_CONTENT, }
             )
-        except ObjectDoesNotExist:
+        else:
             return Response(
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
@@ -407,23 +412,43 @@ class PopulateUser(APIView):
         location = ['Lagos', 'Ibadan', 'Kano', 'Abeokuta', 'Benin']
         role = ['customer', 'service_provider']
 
-        if not (users:= User.objects.all()):
-            
+        if not (users := User.objects.all()):
+
             for x in range(1, 11):
                 names = choice(name).split()
 
                 User.objects.create(
-                    email=f"test{x}@yahoomail.com", 
+                    email=f"test{x}@yahoomail.com",
                     first_name=names[0],
-                    last_name=names[1], 
+                    last_name=names[1],
                     username=f"username{x}",
-                    phone_number=f'090{x}-000-000{x}', 
+                    phone_number=f'090{x}-000-000{x}',
                     _is_verified=True,
-                    role=choice(role), 
+                    role=choice(role),
                     location=choice(location)
                 )
         serialized = UserSerializer(users, many=True)
         return Response(serialized.data)
+
+
+class PopulateSP(APIView):
+
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        name = ['Electrician', 'FashionDesigner', 'WebDeveloper',
+                'Marketer', 'Promoter', 'Teacher', ]
+        sp = User.objects.filter(role='service_provider')
+        print(sp.count())
+        if not ServiceProvider.objects.all():
+            for x in range(sp.count()):
+                ServiceProvider.objects.create(
+                    user=sp[x],
+                    business_name=name[x],
+                    is_verified=True,
+                )
+
+        return Response({'message': 'SP data populated sucessfully.'})
 
 
 class ChangePassword(APIView):
@@ -435,9 +460,9 @@ class ChangePassword(APIView):
         serializer = UserSerializer(user)
         return Response(
             serializer.data,
-            status = status.HTTP_200_OK
+            status=status.HTTP_200_OK
         )
-    
+
     def put(self, request):
         data = {}
         old_password = request.data["old_password"]
@@ -464,13 +489,13 @@ class ChangePassword(APIView):
                     user.save()
                     return Response(
                         {"message": "Password changed successfully"},
-                        status = status.HTTP_202_ACCEPTED
+                        status=status.HTTP_202_ACCEPTED
                     )
                 else:
                     return Response(
-                    {"password": "passwords do not match"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                        {"password": "passwords do not match"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             return Response(
                 {"password": password_validity["message"]},
                 status=status.HTTP_400_BAD_REQUEST
@@ -481,6 +506,7 @@ class ChangePassword(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
 class ResetPasswordEmail(APIView):
     permission_classes = (AllowAny,)
 
@@ -490,7 +516,7 @@ class ResetPasswordEmail(APIView):
             user = User.objects.get(email=email)
 
             relative_link = reverse("reset_password")
-                    
+
             current_site = get_current_site(request).domain
 
             absolute_url = f"http://{current_site}{relative_link}"
@@ -510,13 +536,14 @@ class ResetPasswordEmail(APIView):
                     "message": "Password Reset email sent",
                     "Reset password link": absolute_url
                 },
-                status = status.HTTP_200_OK
+                status=status.HTTP_200_OK
             )
         else:
             return Response(
                 {"message": "Invalid user email"},
-                status = status.HTTP_406_NOT_ACCEPTABLE
+                status=status.HTTP_406_NOT_ACCEPTABLE
             )
+
 
 class ResetPassword(APIView):
     permission_classes = (AllowAny,)
@@ -527,7 +554,7 @@ class ResetPassword(APIView):
         password2 = request.data["password2"]
 
         password_validity = Utils.validate_password(password)
-        
+
         if password_validity["status"]:
             if password2 == password:
                 try:
@@ -537,27 +564,25 @@ class ResetPassword(APIView):
 
                     return Response(
                         {"message": "Password reset successful"},
-                        status = status.HTTP_200_OK
+                        status=status.HTTP_200_OK
                     )
                 except Exception as e:
                     return Response(
                         {"message": e},
-                        status = status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST
                     )
             else:
                 return Response(
                     {"password": "Passwords do not match"},
-                    status = status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST
                 )
         else:
             return Response(
                 {"password": password_validity["message"]},
-                status = status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST
             )
 
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
-
-    # write a funtion that will create users using loop
