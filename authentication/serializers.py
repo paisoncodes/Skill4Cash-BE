@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework.validators import UniqueValidator
 from .models import User, RoleEnum, ServiceProvider
+from phonenumber_field.modelfields import PhoneNumberField
 from src.utils import Utils
 
 
@@ -12,6 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'phone_number', 'username', 'role', 'location')
 
 class CustomerRegistrationSerializer(serializers.ModelSerializer):
+    phone_number = PhoneNumberField(unique=True)
     email = serializers.EmailField(
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
@@ -63,6 +65,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class CustomerSerializer(serializers.ModelSerializer):
+    phone_number = PhoneNumberField(unique=True)
     email = serializers.EmailField(
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
@@ -74,6 +77,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id',
             'first_name',
             'last_name',
+            'phone_number',
             'email',
             'location',
             'is_verified',
@@ -89,6 +93,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                             'email_verification', 'phone_verification']
 
 class SPRegistrationSerializer(serializers.ModelSerializer):
+    phone_number = PhoneNumberField(unique=True)
     user = CustomerRegistrationSerializer()
     sp_id = serializers.CharField(source='pk', read_only=True)
 
@@ -109,6 +114,7 @@ class SPRegistrationSerializer(serializers.ModelSerializer):
         return service_provider
 
 class SPSerializer(serializers.ModelSerializer):
+    phone_number = PhoneNumberField(unique=True)
     user = CustomerSerializer()
     sp_id = serializers.CharField(source='pk', read_only=True)
     
