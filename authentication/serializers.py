@@ -39,7 +39,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             'password',
             'confirm_password',
             'location',
-            '_is_verified',
+            'is_verified',
             'email_verification',
             'phone_verification',
             'role'
@@ -48,7 +48,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             'first_name': {'required': True},
             'last_name': {'required': True}
         }
-        read_only_fields = ['_is_verified', 'role',
+        read_only_fields = ['is_verified', 'role',
                             'email_verification', 'phone_verification']
 
     def validate(self, attrs):
