@@ -28,7 +28,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=100, default="s4k", blank=True, null=True, unique=False)
     phone_number = PhoneNumberField(unique=True)
-    _is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=[
                             (tag.name, tag.value) for tag in RoleEnum])
     location = models.CharField(max_length=100)
@@ -47,13 +47,13 @@ class User(AbstractUser):
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
-    # @property
-    # def is_verified(self):
+    @property
+    def verified(self):
 
-    #     if (self.phone_verification or self.email_verification)\
-    #             and self._is_verified:
-    #         return True
-    #     return False
+        if (self.phone_verification or self.email_verification)\
+                and self.is_verified:
+            return True
+        return False
 
 
 class ServiceProvider(models.Model):
