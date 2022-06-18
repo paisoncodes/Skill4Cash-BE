@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
+from drf_yasg.utils import swagger_auto_schema
 
 
 class CreateReadReview(APIView):
@@ -37,7 +38,8 @@ class CreateReadReview(APIView):
             ratings_seriailizers.data,
             status=status.HTTP_200_OK
         )
-
+    
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         try:
             customer = User.objects.get(id=request.data["customer"])
@@ -104,6 +106,7 @@ class CreateReadCategory(APIView):
             status=status.HTTP_200_OK
         )
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         serializer = CategorySerializer(data=request.data)
         category_name = request.data["name"]
@@ -137,7 +140,8 @@ class CreateReadSchedule(APIView):
     def get(self, request):
         schedules = ScheduleSerializer(self.schedules, many=True)
         return Response(schedules.data, status=status.HTTP_200_OK)
-
+    
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         try:
             customers = User.objects.get(id=request.data["customer"])
@@ -218,13 +222,14 @@ class ReadUpdateDeleteSchedule(APIView):
                 )
         return Response({"error": 'Instance of User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
+    @swagger_auto_schema(request_body=serializer_class)
     def put(self, request, id):
 
         if (schedule := self.get_object(id)):
 
             if schedule.service_provider.user == request.user:
-                customer = request.data['customer'] if request.data['customer'] else schedule.customer
-                service_provider = request.data["service_provider"] if request.data['customer'] else schedule.service_provider
+                customer = request.data['customer'] if 'customer' in request.data.keys() else schedule.customer
+                service_provider = request.data["service_provider"] if 'customer' in request.data.keys() else schedule.service_provider
 
                 serialized_schedule = ScheduleSerializer(
                     schedule, data=request.data)
