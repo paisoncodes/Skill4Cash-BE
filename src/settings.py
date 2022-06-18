@@ -202,3 +202,17 @@ SIMPLE_JWT = {
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
+
+# TWILIO CONFIG FILES 
+ACCOUNT_SID     = config("ACCOUNT_SID")
+AUTH_TOKEN      = config("AUTH_TOKEN")
+MESSAGE_SERVICE = config('MESSAGE_SERVICE')
+TO              = config('TO')
+
+# AMAZON SES CONFIG FILES 
+AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
+AWS_SECRET_KEY    = config("AWS_SECRET_KEY")
+CHARSET = "UTF-8"
+AWS_REGION = "us-east-1"
+SENDER = config('SENDER')
+RECIPIENT = config('RECIPIENT')

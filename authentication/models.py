@@ -2,6 +2,7 @@ from enum import Enum
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from .manager import UserManager
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 from django.contrib.postgres.fields import ArrayField
@@ -30,18 +31,18 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=[
                             (tag.name, tag.value) for tag in RoleEnum])
     location = models.CharField(max_length=100)
-
     phone_verification = models.BooleanField(default=False)
     email_verification = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
-    def __str__(self):
-        return f"{self.email}"
+    objects = UserManager()
 
-    @property
-    def full_name(self):
+    def __str__(self) -> str:
+        return str(self.email)
+
+    def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
     @property
@@ -51,6 +52,8 @@ class User(AbstractUser):
                 and self._is_verified:
             return True
         return False
+
+
 
 
 class ServiceProvider(models.Model):
