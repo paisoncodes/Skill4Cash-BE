@@ -23,7 +23,7 @@ from src.utils import Utils
 from .models import ServiceProvider, User
 from .permissions import PostReadAllPermission
 from .serializers import (CustomerRegistrationSerializer,
-                            CustomerRegistrationSerializerUpdate,
+                            CustomerSerializer, SPSerializer,
                           SPRegistrationSerializer, UserSerializer)
 
 
@@ -75,7 +75,7 @@ class CustomerRegisterGetAll(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CustomerRetrieveUpdateDelete(APIView):
-    serializer_class = CustomerRegistrationSerializerUpdate
+    serializer_class = CustomerSerializer
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, id):
@@ -87,7 +87,7 @@ class CustomerRetrieveUpdateDelete(APIView):
     def get(self, request, id ):
 
         if (customer := self.get_object(id)):
-            serializer = CustomerRegistrationSerializerUpdate(customer)
+            serializer = CustomerSerializer(customer)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(
@@ -97,7 +97,7 @@ class CustomerRetrieveUpdateDelete(APIView):
     def put(self, request, id):
 
         if (customer := self.get_object(id)):
-            serializer = CustomerRegistrationSerializerUpdate(
+            serializer = CustomerSerializer(
                 customer, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -141,7 +141,7 @@ class ServiceProviderRegister(APIView):
             serializer.save()
             user_data = serializer.data
 
-            user = User.objects.get(email=user_data["email"])
+            user = User.objects.get(email=user_data['user']["email"])
 
             token = RefreshToken.for_user(user).access_token
 
@@ -173,9 +173,8 @@ class ServiceProviderRegister(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class ServiceProviderRetrieveUpdateDelete(APIView):
-    serializer_class = SPRegistrationSerializer
+    serializer_class = SPSerializer
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, id):
@@ -187,19 +186,21 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
     def get(self, request, id):
 
         if (service_provider := self.get_object(id)):
-            serializer = SPRegistrationSerializer(service_provider)
+            serializer = SPSerializer(service_provider)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
 
             )
-
+    # not functioning yet
     def put(self, request, id):
         if (service_provider := self.get_object(id)):
-            serializer = SPRegistrationSerializer(
+            serializer = SPSerializer(
                 service_provider, data=request.data)
+
             if serializer.is_valid():
+
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
