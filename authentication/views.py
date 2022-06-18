@@ -93,7 +93,7 @@ class CustomerRetrieveUpdateDelete(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(
-                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
+                {"message": "Invalid User ID"}, status= status.HTTP_404_NOT_FOUND)
        
 
     def put(self, request, id):
