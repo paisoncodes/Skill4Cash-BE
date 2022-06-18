@@ -40,6 +40,6 @@ urlpatterns = [
     path("reset-password-email", ResetPasswordEmail.as_view()),
 
     # populating
-    path('populate/', PopulateUser.as_view(),),
+    path('populate-cus/', PopulateUser.as_view(),),
     path('populate-sp/', PopulateSP.as_view(),)
 ]

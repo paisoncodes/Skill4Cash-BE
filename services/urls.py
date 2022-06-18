@@ -20,5 +20,5 @@ urlpatterns = [
     path("schedules/", ReadSPSchedules.as_view(), name='sp_schedule-list'),
     path("schedule/service-provider/<str:id>/",
          ReadUpdateDeleteSchedule.as_view(), name='sch_sp-detail'),
-    path('populate-data/', PopulateData.as_view()),
+    path('populate-sch-cat/', PopulateData.as_view()),
 ]
