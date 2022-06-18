@@ -94,8 +94,8 @@ class SPRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceProvider
-        fields = ('user', 'sp_id', 'business_name', 'is_verified')
-        read_only_fields = ['is_verified',]
+        fields = ('user', 'sp_id', 'business_name', 'is_verified_business')
+        read_only_fields = ['is_verified_business',]
         extra_kwargs = {
             'business_name': {'required': True}
         }
@@ -114,8 +114,8 @@ class SPSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ServiceProvider
-        fields = ('user','sp_id', 'business_name', 'is_verified')
-        read_only_fields = ['is_verified']
+        fields = ('user','sp_id', 'business_name', 'is_verified_business')
+        read_only_fields = ['is_verified_business']
         extra_kwargs = {
             'business_name': {'required': True}
         }
@@ -131,3 +131,11 @@ class SPSerializer(serializers.ModelSerializer):
         user_ins.save()
 
         return instance
+
+class VerificationSerializer(serializers.Serializer):
+    otp = serializers.CharField(required=True, write_only=True)
+
+
+class UpdatePhoneSerializer(serializers.Serializer):
+    otp = serializers.CharField(required=True, write_only=True)
+    number = serializers.CharField(required=True, write_only=True)

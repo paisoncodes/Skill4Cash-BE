@@ -1,8 +1,10 @@
+
 from enum import Enum
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
+from .manager import UserManager
 import uuid
 from django.contrib.postgres.fields import ArrayField
 
@@ -36,11 +38,13 @@ class User(AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
+    objects = UserManager()
+
     def __str__(self):
         return f"{self.email}"
 
     @property
-    def full_name(self):
+    def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
     @property
@@ -65,7 +69,7 @@ class ServiceProvider(models.Model):
     card_back = models.CharField(max_length=225, blank=True, null=True)
     pob = models.CharField(max_length=225, blank=True,
                            null=True, verbose_name="Proof of business")
-    is_verified = models.BooleanField(default=False)
+    is_verified_business = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.business_name
