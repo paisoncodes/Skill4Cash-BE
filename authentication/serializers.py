@@ -67,6 +67,8 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             location = validated_data["location"], 
             role=RoleEnum.CUSTOMER.value
         )
+        user.set_password(validated_data["password"])
+        user.save()
         return user
 
 class CustomerSerializer(serializers.ModelSerializer):
