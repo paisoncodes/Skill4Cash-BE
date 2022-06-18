@@ -23,9 +23,14 @@ from drf_yasg.utils import swagger_auto_schema
 
 from .models import ServiceProvider, User
 from .permissions import PostReadAllPermission
-from .serializers import (CustomerRegistrationSerializer,
-                            CustomerSerializer, SPSerializer,
-                          SPRegistrationSerializer, UserSerializer)
+from .serializers import (  CustomerRegistrationSerializer,
+                            CustomerSerializer, 
+                            SPSerializer,
+                            SPRegistrationSerializer, 
+                            UserSerializer,
+                            UpdatePhoneSerializer,
+                            VerificationSerializer
+                        )
 
 
 class CustomerRegisterGetAll(APIView):
@@ -124,7 +129,7 @@ class CustomerRetrieveUpdateDelete(APIView):
 
 class ServiceProviderRegister(APIView):
     serializer_class = SPRegistrationSerializer
-    permission_classes = (PostReadAllPermission,)
+    # permission_classes = (PostReadAllPermission,)
 
     def get(self, request):
         users_objs = get_list_or_404(ServiceProvider, user__role="service_provider")
@@ -177,7 +182,7 @@ class ServiceProviderRegister(APIView):
 
 class ServiceProviderRetrieveUpdateDelete(APIView):
     serializer_class = SPSerializer
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     def get_object(self, id):
         try:
@@ -257,18 +262,15 @@ class VerifyEmail(APIView):
 
 
 class VerifyPhone(APIView):
-
+    serializer_class = VerificationSerializer
     permission_classes = (IsAuthenticated,)
-    serializer_class = CustomerRegistrationSerializer
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
 
         otp_code = request.data.get('otp')
         user = User.objects.get(id=request.user.id)
-
-        serializer = CustomerRegistrationSerializer(user, many=False)
-        phone_number = serializer.data['phone_number']
+        phone_number = user['phone_number']
 
         try:
             if not user.phone_verification:
@@ -329,15 +331,15 @@ class VerifyPhone(APIView):
 
 
 class UpdatePhone(APIView):
-
+    serializer_class = UpdatePhoneSerializer
     permission_classes = (IsAuthenticated, )
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
 
         otp_code, new_number = request.data.get(
             'otp'), request.data.get('number')
         user = User.objects.get(id=request.user.id)
-        print(user.is_verified)
         try:
             if not User.objects.filter(
                     phone_number__iexact=new_number).exists():
@@ -412,18 +414,21 @@ class PopulateUser(APIView):
         location = ['Lagos', 'Ibadan', 'Kano', 'Abeokuta', 'Benin']
         role = ['customer', 'service_provider']
 
+
         if not (users := User.objects.all()):
 
             for x in range(1, 11):
+                user_name = f'username{x}'
                 names = choice(name).split()
 
-                User.objects.create(
+                User.objects.create_user(
                     email=f"test{x}@yahoomail.com",
+                    password=user_name,
+                    username=user_name,
                     first_name=names[0],
                     last_name=names[1],
-                    username=f"username{x}",
                     phone_number=f'090{x}-000-000{x}',
-                    _is_verified=True,
+                    _is_verified=choice([False, True]),
                     role=choice(role),
                     location=choice(location)
                 )
@@ -445,7 +450,7 @@ class PopulateSP(APIView):
                 ServiceProvider.objects.create(
                     user=sp[x],
                     business_name=name[x],
-                    is_verified=True,
+                    is_verified_business=choice([False, True]),
                 )
 
         return Response({'message': 'SP data populated sucessfully.'})
