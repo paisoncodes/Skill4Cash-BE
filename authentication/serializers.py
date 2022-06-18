@@ -60,15 +60,9 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         del validated_data['confirm_password']
         user = User.objects.create_user(
-            first_name= validated_data["first_name"],
-            last_name= validated_data["last_name"],
-            email= validated_data["email"],
-            phone_number = validated_data["phone_number"],
-            location = validated_data["location"], 
+            **validated_data, 
             role=RoleEnum.CUSTOMER.value
         )
-        user.set_password(validated_data["password"])
-        user.save()
         return user
 
 class CustomerSerializer(serializers.ModelSerializer):
