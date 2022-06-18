@@ -47,13 +47,13 @@ class User(AbstractUser):
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
-    @property
-    def is_verified(self):
+    # @property
+    # def is_verified(self):
 
-        if (self.phone_verification or self.email_verification)\
-                and self._is_verified:
-            return True
-        return False
+    #     if (self.phone_verification or self.email_verification)\
+    #             and self._is_verified:
+    #         return True
+    #     return False
 
 
 class ServiceProvider(models.Model):
