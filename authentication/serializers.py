@@ -60,8 +60,6 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             **validated_data, role=RoleEnum.CUSTOMER.value
         )
-        user.set_password(validated_data["password"])
-        user.save()
         return user
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -108,8 +106,6 @@ class SPRegistrationSerializer(serializers.ModelSerializer):
         user_data.pop('confirm_password')
         user_obj = User.objects.create_user(**user_data, role=RoleEnum.SERVICE_PROVIDER.value)
         service_provider = ServiceProvider.objects.create(**validated_data, user=user_obj)
-        service_provider.set_password(validated_data["password"])
-        service_provider.save()
         return service_provider
 
 class SPSerializer(serializers.ModelSerializer):
