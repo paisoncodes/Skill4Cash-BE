@@ -4,10 +4,11 @@ import jwt
 
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from decouple import config
 from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_list_or_404
 from django.urls import reverse
@@ -32,7 +33,7 @@ from .serializers import (  CustomerRegistrationSerializer,
                             VerificationSerializer
                         )
 
-
+http_protocol = config("HTTP")
 class CustomerRegisterGetAll(APIView):
     permission_classes = (PostReadAllPermission,)
     serializer_class = CustomerRegistrationSerializer
@@ -57,8 +58,8 @@ class CustomerRegisterGetAll(APIView):
             user = User.objects.get(email=user_data["email"])
             token = RefreshToken.for_user(user).access_token
             relative_link = reverse("verify_email")
-            current_site = get_current_site(request).domain
-            absolute_url = f"http://{current_site}{relative_link}?token={str(token)}"
+            current_site = request.get_host()
+            absolute_url = f"{http_protocol}{current_site}{relative_link}?token={str(token)}"
             email_body = f"""
                         <h2>Hi, <small>{user.first_name}</small></h2>    
                         <h4>Use the link below to verify your email.</h4>
@@ -154,9 +155,9 @@ class ServiceProviderRegister(APIView):
 
             relative_link = reverse("verify_email")
 
-            current_site = get_current_site(request).domain
+            current_site = request.get_host()
 
-            absolute_url = f"http://{current_site}{relative_link}?token={str(token)}"
+            absolute_url = f"{http_protocol}{current_site}{relative_link}?token={str(token)}"
 
             email_body = f"""
                         <h2>Hi, <small>{user.first_name}</small></h2>    
@@ -522,9 +523,8 @@ class ResetPasswordEmail(APIView):
 
             relative_link = reverse("reset_password")
 
-            current_site = get_current_site(request).domain
-
-            absolute_url = f"http://{current_site}{relative_link}"
+            current_site = request.get_host()
+            absolute_url = f"{http_protocol}{current_site}{relative_link}"
 
             email_body = f"""
                         <h2>Hi, <small>{user.first_name}</small></h2>    
