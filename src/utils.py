@@ -11,7 +11,7 @@ from twilio.rest import Client
 from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.models import User
 from django.contrib.auth import authenticate
-
+from django.urls import reverse
 import boto3
 from botocore.exceptions import ClientError
 
@@ -196,3 +196,39 @@ class Utils:
 
         except jwt.exceptions.DecodeError:
             return {"error": "Invalid token"}
+
+    @staticmethod
+    def send_verification_link(user_data,request,serializer):
+        
+        token = Utils.create_token(
+                            user_data['email'], 
+                            user_data['password']
+                        )
+        if "error" not in token.keys():
+            token = token['access']
+            relative_link = reverse("verify_email")
+            current_site = request.get_host()
+            absolute_url = (
+                f"{settings.HTTP}{current_site}{relative_link}?token={str(token)}"
+            )
+            email_body = f"""
+                    <h2>Hi, <small>{user_data['first_name']}</small></h2>    
+                    <h4>Use the link below to verify your email.</h4>
+                    <p>{absolute_url}</p>
+                    """
+
+            data = {
+                "email_subject": "Verify your email",
+                "email_body": email_body,
+                "to_email": user_data['email'],
+            }
+
+            # result a message id, if sent successfully
+            message_id = Utils.sending_email(data)
+
+            return_data = dict(serializer.data)
+            return_data["verification_link"] = absolute_url
+            return_data['message_sent'] = dict(message_id=message_id)
+            return return_data
+        else:
+            return None
