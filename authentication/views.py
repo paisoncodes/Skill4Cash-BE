@@ -1,9 +1,8 @@
 from random import choice
 import jwt
-
+from rest_framework.parsers import MultiPartParser, FormParser
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from decouple import config
 from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -13,10 +12,8 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 from src.permissions import IsOwnerOrReadOnly
 from src.utils import Utils, otp_session
-from src.utils import Utils
 from drf_yasg.utils import swagger_auto_schema
 
 from .models import User
@@ -32,8 +29,6 @@ from .serializers import (
     UserSerializer,
     LoginSerializer,
 )
-
-http_protocol = config("HTTP")
 
 
 class CustomerRegisterGetAll(APIView):
@@ -51,38 +46,23 @@ class CustomerRegisterGetAll(APIView):
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
-        serializer = CustomerRegistrationSerializer(data=request.data)
 
+        serializer = CustomerRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
 
-            user_data = serializer.data
-            user = User.objects.get(email=user_data["email"])
-            token = RefreshToken.for_user(user).access_token
-            relative_link = reverse("verify_email")
-            current_site = request.get_host()
-            absolute_url = (
-                f"{http_protocol}{current_site}{relative_link}?token={str(token)}"
+            user_data = request.data
+            return_data = Utils.send_verification_link(
+                user_data,
+                request,
+                serializer
             )
-            email_body = f"""
-                        <h2>Hi, <small>{user.first_name}</small></h2>    
-                        <h4>Use the link below to verify your email.</h4>
-                        <p>{absolute_url}</p>
-                        """
-
-            data = {
-                "email_subject": "Verify your email",
-                "email_body": email_body,
-                "to_email": user.email,
-            }
-
-            # result a message id, if sent successfully
-            Utils.sending_email(data)
-
-            return_data = dict(serializer.data)
-            return_data["verification_link"] = absolute_url
-
-            return Response(return_data, status=status.HTTP_201_CREATED)
+            if return_data:
+                return Response(
+                    return_data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response({'Message': 'unable to send verification link'})
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -137,11 +117,12 @@ class CustomerRetrieveUpdateDelete(APIView):
 
 class ServiceProviderRegister(APIView):
     serializer_class = ServiceProviderRegistrationSerializer
-    # permission_classes = (PostReadAllPermission,)
+    permission_classes = (PostReadAllPermission,)
 
     def get(self, request):
-        users_objs = get_list_or_404(User, user__role="service_provider")
-        users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+        users_objs = get_list_or_404(User, role="service_provider")
+        users_serilizer = ServiceProviderRegistrationSerializer(
+            users_objs, many=True)
         data = {
             "message": "Successfully retrieved sp-customers",
             "data": users_serilizer.data,
@@ -154,46 +135,27 @@ class ServiceProviderRegister(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            user_data = serializer.data
-
-            user = User.objects.get(email=user_data["user"]["email"])
-
-            token = RefreshToken.for_user(user).access_token
-
-            relative_link = reverse("verify_email")
-
-            current_site = request.get_host()
-
-            absolute_url = (
-                f"{http_protocol}{current_site}{relative_link}?token={str(token)}"
+            
+            user_data = request.data
+            return_data = Utils.send_verification_link(
+                user_data,
+                request,
+                serializer
             )
-
-            email_body = f"""
-                        <h2>Hi, <small>{user.first_name}</small></h2>    
-                        <h4>Use the link below to verify your email.</h4>
-                        <p>{absolute_url}</p>
-
-                        """
-            data = {
-                "email_subject": "Verify your email",
-                "email_body": email_body,
-                "to_email": user.email,
-            }
-
-            # result a message id, if sent successfully
-            Utils.sending_email(data)
-
-            return_data = dict(serializer.data)
-            return_data["verification_link"] = absolute_url
-
-            return Response(return_data, status=status.HTTP_201_CREATED)
+            if return_data:
+                return Response(
+                    return_data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response({'Message': 'unable to send verification link'})
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ServiceProviderRetrieveUpdateDelete(APIView):
     serializer_class = ServiceProviderSerializer
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_object(self, id):
         try:
@@ -201,9 +163,9 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         except User.DoesNotExist:
             return None
 
-    def get(self, request, id):
+    def get(self, request, id, format=None):
 
-        if service_provider := self.get_object(id):
+        if service_provider:= self.get_object(id):
             serializer = ServiceProviderSerializer(service_provider)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -211,13 +173,13 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
 
-    # not functioning yet
     def put(self, request, id):
-        if service_provider := self.get_object(id):
-            serializer = ServiceProviderSerializer(service_provider, data=request.data)
-
+        if service_provider:= self.get_object(id):
+            serializer = ServiceProviderSerializer(
+                service_provider,
+                data=request.data
+            )
             if serializer.is_valid():
-
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
@@ -229,7 +191,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
 
     def delete(self, request, id):
 
-        if service_provider := self.get_object(id):
+        if service_provider:= self.get_object(id):
             service_provider.delete()
             return Response(
                 {
@@ -249,11 +211,12 @@ class VerifyEmail(APIView):
     def get(self, request):
         token = request.GET.get("token")
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=["HS256"])
             user = User.objects.get(id=payload["user_id"])
 
             if not user.is_verified:
-                user._is_verified = True
+                user.is_verified = True
                 user.email_verification = True
                 user.save()
 
@@ -355,7 +318,8 @@ class UpdatePhone(APIView):
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
 
-        otp_code, new_number = request.data.get("otp"), request.data.get("number")
+        otp_code, new_number = request.data.get(
+            "otp"), request.data.get("number")
         user = User.objects.get(id=request.user.id)
         try:
             if not User.objects.filter(phone_number__iexact=new_number).exists():
@@ -442,10 +406,11 @@ class CustomerLogin(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
-            user = User.objects.get(email=request.POST["email"])
+            user = User.objects.get(email=request.data["email"])
             if user.role == "customer":
                 response = Utils.create_token(
-                    email=request.POST["email"], password=request.POST["password"]
+                    email=request.data["email"],
+                    password=request.data["password"]
                 )
                 if "error" in response.keys():
                     return Response(
@@ -482,10 +447,10 @@ class ServiceProviderLogin(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
-            user = User.objects.get(email=request.POST["email"])
+            user = User.objects.get(email=request.data["email"])
             if user.role == "service_provider":
                 response = Utils.create_token(
-                    email=request.POST["email"], password=request.POST["password"]
+                    email=request.data["email"], password=request.data["password"]
                 )
                 if "error" in response.keys():
                     return Response(
@@ -533,63 +498,6 @@ class RefreshToken(APIView):
                     {"code": 200, "status": "Success", "message": response},
                     status=status.HTTP_200_OK,
                 )
-
-
-class PopulateUser(APIView):
-
-    permission_classes = (AllowAny,)
-
-    def get(self, request):
-
-        name = ["JAMES PETER", "JOHN DOE"]
-        location = ["Lagos", "Ibadan", "Kano", "Abeokuta", "Benin"]
-        role = ["customer", "service_provider"]
-
-        if not (users := User.objects.all()):
-
-            for x in range(1, 11):
-                user_name = f"username{x}"
-                names = choice(name).split()
-
-                User.objects.create_user(
-                    email=f"test{x}@yahoomail.com",
-                    password=user_name,
-                    username=user_name,
-                    first_name=names[0],
-                    last_name=names[1],
-                    phone_number=f"090{x}-000-000{x}",
-                    _is_verified=choice([False, True]),
-                    role=choice(role),
-                    location=choice(location),
-                )
-        serialized = UserSerializer(users, many=True)
-        return Response(serialized.data)
-
-
-class PopulateSP(APIView):
-
-    permission_classes = (AllowAny,)
-
-    def get(self, request):
-        name = [
-            "Electrician",
-            "FashionDesigner",
-            "WebDeveloper",
-            "Marketer",
-            "Promoter",
-            "Teacher",
-        ]
-        sp = User.objects.filter(role="service_provider")
-
-        if not User.objects.all():
-            for x in range(sp.count()):
-                User.objects.create(
-                    user=sp[x],
-                    business_name=name[x],
-                    is_verified_business=choice([False, True]),
-                )
-
-        return Response({"message": "SP data populated sucessfully."})
 
 
 class ChangePassword(APIView):

@@ -35,7 +35,8 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
                     """,
     )
     confirm_password = serializers.CharField(write_only=True, required=True)
-
+    verified = serializers.SerializerMethodField(read_only=True)
+    fullname = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = User
         fields = (
@@ -47,20 +48,22 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
             "location",
-            "is_verified",
+            "verified",
             "email_verification",
             "phone_verification",
             "role",
+            "fullname",
         )
         extra_kwargs = {
             "first_name": {"required": True},
             "last_name": {"required": True},
         }
         read_only_fields = [
-            "is_verified",
+            "verified",
             "role",
             "email_verification",
             "phone_verification",
+            "fullname",
         ]
 
     def validate(self, attrs):
@@ -74,7 +77,16 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
         del validated_data["confirm_password"]
         user = User.objects.create_user(**validated_data, role="customer")
         return user
+    
+    def get_fullname(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.get_full_name()
+        return None
 
+    def get_verified(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.verified
+        return None
 
 class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
     phone_number = PhoneNumberField(unique=True)
@@ -91,7 +103,8 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
                     """,
     )
     confirm_password = serializers.CharField(write_only=True, required=True)
-
+    verified = serializers.SerializerMethodField(read_only=True)
+    fullname = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = User
         fields = (
@@ -103,11 +116,11 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
             "location",
-            "is_verified",
+            "verified",
             "email_verification",
             "phone_verification",
             "role",
-            "sp_id",
+            'fullname',
             "business_name",
             "is_verified_business",
         )
@@ -117,12 +130,13 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
             "business_name": {"required": True},
         }
         read_only_fields = [
-            "is_verified",
+            "verified",
             "role",
             "email_verification",
             "phone_verification",
             "is_verified_business",
         ]
+
 
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
@@ -136,62 +150,78 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data, role="service_provider")
         return user
 
+    def get_fullname(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.get_full_name()
+        return None
+
+    def get_verified(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.verified
+        return None
 
 class CustomerSerializer(serializers.ModelSerializer):
-    phone_number = PhoneNumberField(unique=True)
-    email = serializers.EmailField(
-        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
-    )
-    sp_id = serializers.CharField(source="pk", read_only=True)
-
+    verified = serializers.SerializerMethodField(read_only=True)
+    fullname = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = User
         fields = (
             "id",
             "first_name",
             "last_name",
-            "phone_number",
-            "email",
             "location",
-            "is_verified",
+            "verified",
             "email_verification",
             "phone_verification",
             "role",
+            "fullname",
         )
         extra_kwargs = {
             "first_name": {"required": True},
             "last_name": {"required": True},
         }
         read_only_fields = [
-            "is_verified",
+            "verified",
             "role",
+            "fullname",
             "email_verification",
             "phone_verification",
         ]
 
+    
+    def get_fullname(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.get_full_name()
+        return None
+
+    def get_verified(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.verified
+        return None
 
 class ServiceProviderSerializer(serializers.ModelSerializer):
-    phone_number = PhoneNumberField(unique=True)
-    email = serializers.EmailField(
-        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
-    )
-    sp_id = serializers.CharField(source="pk", read_only=True)
 
+    verified = serializers.SerializerMethodField(read_only=True)
+    fullname = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = User
         fields = (
             "id",
             "first_name",
             "last_name",
-            "phone_number",
-            "email",
             "location",
-            "is_verified",
+            "business_name",
+            "service_category",
+            'keywords',
+            'gallery',
+            "card_front",
+            "card_back",
+            "pob",
+            "role",
+            "fullname",
+            "verified",
             "email_verification",
             "phone_verification",
-            "role",
-            "sp_id",
-            "business_name",
             "is_verified_business",
         )
         extra_kwargs = {
@@ -200,11 +230,23 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
             "business_name": {"required": True},
         }
         read_only_fields = [
-            "is_verified",
+            "verified",
             "role",
+            "fullname",
             "email_verification",
             "phone_verification",
+            "is_verified_business",
         ]
+
+    def get_fullname(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.get_full_name()
+        return None
+
+    def get_verified(self, obj):
+        if hasattr(obj, 'id'):
+            return obj.verified
+        return None
 
 
 class VerificationSerializer(serializers.Serializer):
