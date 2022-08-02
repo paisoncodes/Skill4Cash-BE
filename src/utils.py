@@ -8,8 +8,9 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
-
+from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.models import User
+from django.contrib.auth import authenticate
 
 import boto3
 from botocore.exceptions import ClientError
@@ -150,3 +151,48 @@ class Utils:
                 return {"status": True, "message": "Email ok"}
         else:
             return {"status": False, "message": "Enter Valid E-mail"}
+    
+    @staticmethod
+    def create_token(email:str, password:str) -> dict:
+        user = authenticate(email=email, password=password)
+        if user:
+            refresh = RefreshToken.for_user(user)
+            return {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }
+        else:
+            return {
+                "error": "Invalid login details"
+            }
+            
+    @staticmethod
+    def refresh_token(refresh:str) -> dict:
+        try:
+            payload = jwt.decode(
+                refresh, settings.SECRET_KEY, algorithms=["HS256"])
+            user = User.objects.get(id=payload["user_id"])
+            token = RefreshToken.for_user(user)
+            return {
+                'access': str(token.access_token)
+            }
+        except jwt.ExpiredSignatureError:
+            return {"error": "Token expired"}
+
+        except jwt.exceptions.DecodeError:
+            return {"error": "Invalid token"}
+    
+    @staticmethod
+    def get_token_user(token:str) -> dict:
+        try:
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=["HS256"])
+            user = User.objects.get(id=payload["user_id"])
+            return {
+                'user': user
+            }
+        except jwt.ExpiredSignatureError:
+            return {"error": "Token expired"}
+
+        except jwt.exceptions.DecodeError:
+            return {"error": "Invalid token"}

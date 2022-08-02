@@ -1,5 +1,3 @@
-
-from enum import Enum
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -11,29 +9,38 @@ from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
 
-class RoleEnum(Enum):
-    CUSTOMER = "customer"
-    SERVICE_PROVIDER = "service_provider"
-
-    def __str__(self):
-        return self.value
+ROLES = (
+    ("customer", "customer"),
+    ("service_provider", "service_provider"),
+)
 
 
 class User(AbstractUser):
     id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+        primary_key=True, default=uuid.uuid4, editable=False, unique=True
+    )
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     username = models.CharField(
-        max_length=100, default="s4k", blank=True, null=True, unique=False)
+        max_length=100, default="s4k", blank=True, null=True, unique=False
+    )
     phone_number = PhoneNumberField(unique=True)
     is_verified = models.BooleanField(default=False)
-    role = models.CharField(max_length=20, choices=[
-                            (tag.name, tag.value) for tag in RoleEnum])
+    role = models.CharField(max_length=20, choices=ROLES)
     location = models.CharField(max_length=100)
     phone_verification = models.BooleanField(default=False)
     email_verification = models.BooleanField(default=False)
+    business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
+    service_category = models.CharField(max_length=200, blank=True, null=True)
+    keywords = ArrayField(models.CharField(max_length=225), default=list)
+    gallery = ArrayField(models.CharField(max_length=225), default=list)
+    card_front = models.CharField(max_length=225, blank=True, null=True)
+    card_back = models.CharField(max_length=225, blank=True, null=True)
+    pob = models.CharField(
+        max_length=225, blank=True, null=True, verbose_name="Proof of business"
+    )
+    is_verified_business = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -50,26 +57,6 @@ class User(AbstractUser):
     @property
     def verified(self):
 
-        if (self.phone_verification or self.email_verification)\
-                and self.is_verified:
+        if (self.phone_verification or self.email_verification) and self.is_verified:
             return True
         return False
-
-
-class ServiceProvider(models.Model):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, unique=True, editable=False)
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_provider")
-    business_name = models.CharField(max_length=200, unique=True)
-    service_category = models.CharField(max_length=200, blank=True, null=True)
-    keywords = ArrayField(models.CharField(max_length=225), default=list)
-    gallery = ArrayField(models.CharField(max_length=225), default=list)
-    card_front = models.CharField(max_length=225, blank=True, null=True)
-    card_back = models.CharField(max_length=225, blank=True, null=True)
-    pob = models.CharField(max_length=225, blank=True,
-                           null=True, verbose_name="Proof of business")
-    is_verified_business = models.BooleanField(default=False)
-
-    def __str__(self) -> str:
-        return self.business_name

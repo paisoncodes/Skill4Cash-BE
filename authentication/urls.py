@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     CustomerRegisterGetAll,
     CustomerRetrieveUpdateDelete,
+    ServiceProviderLogin,
     ServiceProviderRegister,
     ServiceProviderRetrieveUpdateDelete,
     VerifyEmail,
@@ -12,15 +13,10 @@ from .views import (
     ChangePassword,
     ResetPassword,
     ResetPasswordEmail,
-
+    CustomerLogin,
     PopulateUser,
-    PopulateSP
-)
-
-
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView
+    PopulateSP,
+    RefreshToken,
 )
 
 
@@ -29,17 +25,23 @@ urlpatterns = [
     path("customers/<str:id>/", CustomerRetrieveUpdateDelete.as_view()),
     path("sp/register/", ServiceProviderRegister.as_view()),
     path("sp/<str:id>/", ServiceProviderRetrieveUpdateDelete.as_view()),
-    path('otp/update/', UpdatePhone.as_view(), name='UpdatePhone'),
-    path("otp/verification/", VerifyPhone.as_view(), name='VerifyPhone'),
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("otp/update/", UpdatePhone.as_view(), name="UpdatePhone"),
+    path("otp/verification/", VerifyPhone.as_view(), name="VerifyPhone"),
+    path("customer/login/", CustomerLogin.as_view()),
+    path("service-provider/login/", ServiceProviderLogin.as_view()),
+    path("login/refresh/", RefreshToken.as_view()),
     path("login/google/", GoogleLogin.as_view()),
-    path('verify-email/', VerifyEmail.as_view(), name="verify_email"),
+    path("verify-email/", VerifyEmail.as_view(), name="verify_email"),
     path("change-password", ChangePassword.as_view()),
     path("reset-password", ResetPassword.as_view()),
     path("reset-password-email", ResetPasswordEmail.as_view()),
-
     # populating
-    path('populate-cus/', PopulateUser.as_view(),),
-    path('populate-sp/', PopulateSP.as_view(),)
+    path(
+        "populate-cus/",
+        PopulateUser.as_view(),
+    ),
+    path(
+        "populate-sp/",
+        PopulateSP.as_view(),
+    ),
 ]
