@@ -14,8 +14,6 @@ from .views import (
     ResetPassword,
     ResetPasswordEmail,
     CustomerLogin,
-    PopulateUser,
-    PopulateSP,
     RefreshToken,
 )
 
@@ -35,13 +33,4 @@ urlpatterns = [
     path("change-password", ChangePassword.as_view()),
     path("reset-password", ResetPassword.as_view()),
     path("reset-password-email", ResetPasswordEmail.as_view()),
-    # populating
-    path(
-        "populate-cus/",
-        PopulateUser.as_view(),
-    ),
-    path(
-        "populate-sp/",
-        PopulateSP.as_view(),
-    ),
 ]
