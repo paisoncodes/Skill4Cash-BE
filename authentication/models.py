@@ -1,3 +1,4 @@
+from email.policy import default
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -47,7 +48,8 @@ class User(AbstractUser):
     phone_number         = PhoneNumberField(unique=True)
     is_verified          = models.BooleanField(default=False)
     role                 = models.CharField(max_length=20, choices=ROLES)
-    location             = models.CharField(max_length=100)
+    state             = models.CharField(max_length=100)
+    city             = models.CharField(max_length=100, default="everywhere")
     phone_verification   = models.BooleanField(default=False)
     email_verification   = models.BooleanField(default=False)
 
@@ -110,3 +112,7 @@ class User(AbstractUser):
         if (self.phone_verification or self.email_verification) and self.is_verified:
             return True
         return False
+    
+    @property
+    def location(self):
+        return f"{self.city}, {self.state}"
