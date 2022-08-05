@@ -57,10 +57,11 @@ INSTALLED_APPS = [
     'drf_yasg',
     'dj_rest_auth',
     'rest_framework.authtoken',
+    'channels',
     
     'authentication.apps.AuthConfig',
     'services',
-
+    'chat',
 
 ]
 
@@ -98,8 +99,6 @@ TEMPLATES = [
 ]
 
 
-
-
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
@@ -111,7 +110,7 @@ REST_FRAMEWORK = {
     ]
 }
 
-
+ASGI_APPLICATION = "src.asgi.application"
 WSGI_APPLICATION = 'src.wsgi.application'
 
 
@@ -219,3 +218,12 @@ SENDER = config('SENDER')
 RECIPIENT = config('RECIPIENT')
 
 HTTP = config('HTTP')
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(config("REDIS_HOST"), config("REDIS_PORT", cast=int))],
+        },
+    },
+}
