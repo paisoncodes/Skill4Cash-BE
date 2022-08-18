@@ -1,4 +1,4 @@
-from random import choice
+from drf_yasg import openapi
 import jwt
 from rest_framework.parsers import MultiPartParser, FormParser
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
@@ -14,8 +14,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import HTTP
-from src.utils import Utils, otp_session
+from src.utils import Utils, api_response, otp_session
 from drf_yasg.utils import swagger_auto_schema
+from decouple import config
 
 from .models import User
 from .permissions import PostReadAllPermission
@@ -33,7 +34,7 @@ from .serializers import (
 
 
 class CustomerRegisterGetAll(APIView):
-    permission_classes = (PostReadAllPermission,)
+    # permission_classes = (PostReadAllPermission,)
     serializer_class = CustomerRegistrationSerializer
 
     def get(self, request):
@@ -80,10 +81,23 @@ class CustomerRegisterGetAll(APIView):
             user_data = request.data
             return_data = Utils.send_verification_link(user_data, request, serializer)
             if return_data:
-                return Response(return_data, status=status.HTTP_201_CREATED)
-            return Response({"Message": "unable to send verification link"})
+                return api_response(
+                    status_code=201,
+                    message="Customer created successfully",
+                    data=serializer.data,
+                    status="Success",
+                )
+            return api_response(
+                status_code=400,
+                message="Unable to send verification link",
+                status="Failed",
+            )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response(
+                status_code=400,
+                message=serializer.errors,
+                status="Failed",
+            )
 
 
 class CustomerRetrieveUpdateDelete(APIView):
@@ -136,7 +150,7 @@ class CustomerRetrieveUpdateDelete(APIView):
 
 class ServiceProviderRegister(APIView):
     serializer_class = ServiceProviderRegistrationSerializer
-    permission_classes = (PostReadAllPermission,)
+    permission_classes = (AllowAny,)
 
     def get(self, request):
         users_objs = get_list_or_404(User, role="service_provider")
@@ -157,10 +171,23 @@ class ServiceProviderRegister(APIView):
             user_data = request.data
             return_data = Utils.send_verification_link(user_data, request, serializer)
             if return_data:
-                return Response(return_data, status=status.HTTP_201_CREATED)
-            return Response({"Message": "unable to send verification link"})
+                return api_response(
+                    status_code=201,
+                    message="Customer created successfully",
+                    data=serializer.data,
+                    status="Success",
+                )
+            return api_response(
+                status_code=400,
+                message="Unable to send verification link",
+                status="Failed",
+            )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response(
+                status_code=400,
+                message=serializer.errors,
+                status="Failed",
+            )
 
 
 class ServiceProviderRetrieveUpdateDelete(APIView):
@@ -183,7 +210,25 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             return Response(
                 {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
             )
-
+            
+    @swagger_auto_schema(
+            operation_id='Create a document',
+            operation_description='Create a document by providing file and s3_key',
+            manual_parameters=[
+                openapi.Parameter('file', openapi.IN_FORM, type=openapi.TYPE_FILE, description='Document to be uploaded'),
+                openapi.Parameter('s3_key', openapi.IN_FORM, type=openapi.TYPE_STRING, description='S3 Key of the Document '
+                                                                                                   '(folders along with name)')
+            ],
+            responses={
+                status.HTTP_200_OK: openapi.Response(
+                    'Success', schema=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                        'doc_id': openapi.Schema(type=openapi.TYPE_STRING, description='Document ID'),
+                        'mime_type': openapi.Schema(type=openapi.TYPE_STRING, description='Mime Type of the Document'),
+                        'version_id': openapi.Schema(type=openapi.TYPE_STRING, description='S3 version ID of the document')
+                    })
+                )
+            }
+        )
     def put(self, request, id):
         if service_provider := self.get_object(id):
             serializer = ServiceProviderSerializer(service_provider, data=request.data)
@@ -254,7 +299,7 @@ class VerifyPhone(APIView):
 
         try:
             if not user.phone_verification:
-                if not "code" in request.session.keys():
+                if not "status_code" in request.session.keys():
                     sent_otp = otp_session(request, phone_number)
                     if sent_otp:
                         return Response(
@@ -271,7 +316,7 @@ class VerifyPhone(APIView):
                     )
                 else:
                     if otp_code:
-                        if str(otp_code) == str(request.session["code"]):
+                        if str(otp_code) == str(request.session["status_code"]):
                             user.phone_verification = True
                             user.save()
 
@@ -330,7 +375,7 @@ class UpdatePhone(APIView):
         try:
             if not User.objects.filter(phone_number__iexact=new_number).exists():
 
-                if not "code" in request.session.keys():
+                if not "status_code" in request.session.keys():
                     sent_otp = otp_session(request, new_number)
                     if sent_otp:
                         return Response(
@@ -348,7 +393,7 @@ class UpdatePhone(APIView):
 
                 else:
                     if otp_code:
-                        if str(otp_code) == str(request.session["code"]):
+                        if str(otp_code) == str(request.session["status_code"]):
                             user.phone_verification = True
                             user.phone_number = new_number
                             user.save()
@@ -401,11 +446,12 @@ class UpdatePhone(APIView):
 class CustomerLogin(APIView):
     serializer_class = LoginSerializer
 
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         if "email" not in request.data.keys() or "password" not in request.data.keys():
             return Response(
                 {
-                    "code": 400,
+                    "status_code": 400,
                     "status": "Failed",
                     "message": "Please enter your email address and password.",
                 },
@@ -419,18 +465,20 @@ class CustomerLogin(APIView):
                 )
                 if "error" in response.keys():
                     return Response(
-                        {"code": 400, "status": "Failed", "message": response},
+                        {"status_code": 400, "status": "Failed", "message": response},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 else:
-                    return Response(
-                        {"code": 200, "status": "Success", "message": response},
-                        status=status.HTTP_200_OK,
+                    return api_response(
+                        status_code=200,
+                        message="Login successful",
+                        data=response,
+                        status="Success",
                     )
             else:
                 return Response(
                     {
-                        "code": 400,
+                        "status_code": 400,
                         "status": "Failed",
                         "message": "You're not a customer. Try the logging in as a service provider",
                     },
@@ -445,7 +493,7 @@ class ServiceProviderLogin(APIView):
         if "email" not in request.data.keys() or "password" not in request.data.keys():
             return Response(
                 {
-                    "code": 400,
+                    "status_code": 400,
                     "status": "Failed",
                     "message": "Please enter your email address and password.",
                 },
@@ -459,18 +507,20 @@ class ServiceProviderLogin(APIView):
                 )
                 if "error" in response.keys():
                     return Response(
-                        {"code": 400, "status": "Failed", "message": response},
+                        {"status_code": 400, "status": "Failed", "message": response},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 else:
-                    return Response(
-                        {"code": 200, "status": "Success", "message": response},
-                        status=status.HTTP_200_OK,
+                    return api_response(
+                        status_code=200,
+                        message="Login successful",
+                        data=response,
+                        status="Success",
                     )
             else:
                 return Response(
                     {
-                        "code": 400,
+                        "status_code": 400,
                         "status": "Failed",
                         "message": "You're not a service_provider. Try the logging in as a customer",
                     },
@@ -485,7 +535,7 @@ class RefreshToken(APIView):
         if "refresh" not in request.POST:
             return Response(
                 {
-                    "code": 400,
+                    "status_code": 400,
                     "status": "Failed",
                     "message": "Refresh token not provided",
                 },
@@ -495,12 +545,12 @@ class RefreshToken(APIView):
             response = Utils.refresh_token(refresh=request.data.get("refresh"))
             if "error" in response.keys():
                 return Response(
-                    {"code": 401, "status": "Failed", "message": response},
+                    {"status_code": 401, "status": "Failed", "message": response},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             else:
                 return Response(
-                    {"code": 200, "status": "Success", "message": response},
+                    {"status_code": 200, "status": "Success", "message": response},
                     status=status.HTTP_200_OK,
                 )
 
@@ -635,3 +685,10 @@ class ResetPassword(APIView):
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
+
+class DecodeToken(APIView):
+    def post(self, request):
+        token = request.data['token']
+        data = jwt.decode(token, config('SECRET_KEY'), algorithms=["HS256"])
+        user = UserSerializer(User.objects.get(id=data["user_id"])).data
+        return api_response(status_code=200, message="successful", status="success", data=user)

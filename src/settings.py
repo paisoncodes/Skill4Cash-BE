@@ -25,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', cast=bool)
+DEBUG = config("DEBUG", cast=bool)
 
 
 ALLOWED_HOSTS = ["*", "skills4cash-be.herokuapp.com"]
@@ -37,62 +37,63 @@ ALLOWED_HOSTS = ["*", "skills4cash-be.herokuapp.com"]
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-    
-    #installed apps
-    'phonenumber_field',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'drf_yasg',
-    'dj_rest_auth',
-    'rest_framework.authtoken',
-    'channels',
-    
-    'authentication.apps.AuthConfig',
-    'services',
-    'chat',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.sites",
+    # installed apps
+    "phonenumber_field",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "drf_yasg",
+    "dj_rest_auth",
+    "rest_framework.authtoken",
+    "channels",
+    "corsheaders",
+    "rest_framework_jwt",
+    "authentication.apps.AuthConfig",
+    "services",
+    "chat",
 ]
 
-SITE_ID=1
+SITE_ID = 1
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'src.urls'
+CORS_ALLOW_ALL_ORIGINS = True
+
+ROOT_URLCONF = "src.urls"
 
 AUTH_USER_MODEL = "authentication.User"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -105,13 +106,13 @@ REST_FRAMEWORK = {
     # 'DEFAULT_PERMISSION_CLASSES': [
     #     'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     # ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication'
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication"
     ]
 }
 
 ASGI_APPLICATION = "src.asgi.application"
-WSGI_APPLICATION = 'src.wsgi.application'
+WSGI_APPLICATION = "src.wsgi.application"
 
 
 # Database
@@ -123,9 +124,11 @@ prod_db = dj_database_url.config(conn_max_age=500)
 HEROKU = config("HEROKU", cast=bool)
 
 if HEROKU:
-    DATABASES = {
-    'default': prod_db
-}
+    DATABASES = {"default": prod_db}
+    db_from_env = dj_database_url.config(conn_max_age=0, ssl_require=False)
+    DATABASES["default"].update(db_from_env)
+    DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
+
 
 else:
     DATABASES = {
@@ -140,23 +143,23 @@ else:
     }
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -164,9 +167,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -179,51 +182,49 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 PROJECT_ROOT = os.path.join(os.path.abspath(__file__))
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
-STATICFILES_DIRS = (os.path.join(BASE_DIR,'static'),)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-MEDIA_URL = 'uploads/'
-MEDIA_ROOT = BASE_DIR / 'mediafiles'
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+MEDIA_URL = "uploads/"
+MEDIA_ROOT = BASE_DIR / "mediafiles"
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
-
-
 
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
 
-# TWILIO CONFIG FILES 
-ACCOUNT_SID     = config("ACCOUNT_SID")
-AUTH_TOKEN      = config("AUTH_TOKEN")
-MESSAGE_SERVICE = config('MESSAGE_SERVICE')
-TO              = config('TO')
+# TWILIO CONFIG FILES
+ACCOUNT_SID = config("ACCOUNT_SID")
+AUTH_TOKEN = config("AUTH_TOKEN")
+MESSAGE_SERVICE = config("MESSAGE_SERVICE")
+TO = config("TO")
 
-# AMAZON SES CONFIG FILES 
+# AMAZON SES CONFIG FILES
 AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
-AWS_SECRET_KEY    = config("AWS_SECRET_KEY")
+AWS_SECRET_KEY = config("AWS_SECRET_KEY")
 CHARSET = "UTF-8"
 AWS_REGION = "us-east-1"
-SENDER = config('SENDER')
-RECIPIENT = config('RECIPIENT')
+SENDER = config("SENDER")
+RECIPIENT = config("RECIPIENT")
 
-HTTP = config('HTTP')
+HTTP = config("HTTP")
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(config("REDIS_HOST"), config("REDIS_PORT", cast=int))],
-        },
-    },
-}
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [(config("REDIS_HOST"), config("REDIS_PORT", cast=int))],
+#         },
+#     },
+# }

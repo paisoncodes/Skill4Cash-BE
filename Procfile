@@ -1,3 +1,2 @@
-
 release: python manage.py migrate
-web: gunicorn src.wsgi --timeout=30 --log-file -
+web: bin/start-pgbouncer-stunnel gunicorn src.asgi:application -w 4 -k uvicorn.workers.UvicornWorker 

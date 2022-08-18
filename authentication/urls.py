@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     CustomerRegisterGetAll,
     CustomerRetrieveUpdateDelete,
+    DecodeToken,
     ServiceProviderLogin,
     ServiceProviderRegister,
     ServiceProviderRetrieveUpdateDelete,
@@ -33,4 +34,5 @@ urlpatterns = [
     path("auth/change-password", ChangePassword.as_view()),
     path("auth/reset-password", ResetPassword.as_view()),
     path("auth/reset-password-email", ResetPasswordEmail.as_view()),
+    path("auth/decode/", DecodeToken.as_view()),
 ]

@@ -1,36 +1,16 @@
-from authentication.serializers import UserSerializer
-from .models import Conversation, Message
 from rest_framework import serializers
+from .models import Chat, ChatMessage
 
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Message
-        exclude = ('conversation_id',)
+        model = ChatMessage
+        exclude = ("chat",)
 
 
-class ConversationListSerializer(serializers.ModelSerializer):
-    initiator = UserSerializer()
-    receiver = UserSerializer()
-    last_message = serializers.SerializerMethodField()
-
+class ChatSerializer(serializers.ModelSerializer):
+    messages = MessageSerializer(many=True, read_only=True)
     class Meta:
-        model = Conversation
-        fields = ['initiator', 'receiver', 'last_message']
-
-    def get_last_message(self, instance):
-        message = instance.message_set.first()
-        if message:
-            return MessageSerializer(instance=message).data
-        else:
-            return None
-
-
-class ConversationSerializer(serializers.ModelSerializer):
-    initiator = UserSerializer()
-    receiver = UserSerializer()
-    message_set = MessageSerializer(many=True)
-
-    class Meta:
-        model = Conversation
-        fields = ['initiator', 'receiver', 'message_set']
+        model = Chat
+        fields = ["messages", "short_id"]
+    

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from django.core.asgi import get_asgi_application
 
-from src.tokenauth_middleware import TokenAuthMiddleware
+from src.tokenauth_middleware import JsonTokenAuthMiddleware, TokenAuthMiddleware
 from channels.security.websocket import AllowedHostsOriginValidator
 
 # This allows easy placement of apps within the interior
@@ -29,16 +29,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.settings.local")
 django_application = get_asgi_application()
 
 # Import websocket application here, so apps from django_application are loaded first
-from src import routing  # noqa isort:skip
+import socketio
+from chat.sockets import sio
 
-from channels.routing import ProtocolTypeRouter, URLRouter  # noqa isort:skip
 
-
-application = ProtocolTypeRouter(
-    {
-        "http": get_asgi_application(),
-        "websocket": AllowedHostsOriginValidator(
-            TokenAuthMiddleware(URLRouter(routing.websocket_urlpatterns))
-        ),
-    }
-)
+application = socketio.ASGIApp(sio, django_application)

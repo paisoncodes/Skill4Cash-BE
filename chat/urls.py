@@ -1,8 +1,6 @@
 from django.urls import path
-from . import views
+from .views import GetChat
 
 urlpatterns = [
-    path("start/", views.start_chat, name="start_convo"),
-    path("<int:chat_id>/", views.get_conversation, name="get_conversation"),
-    path("", views.conversations, name="conversations"),
+    path("chats/all", GetChat.as_view(), name="get-chats"),
 ]
