@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "channels",
     "corsheaders",
-    "rest_framework_jwt",
     "authentication.apps.AuthConfig",
     "services",
     "chat",
