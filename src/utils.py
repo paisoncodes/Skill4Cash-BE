@@ -7,13 +7,21 @@ import jwt
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from twilio.base.exceptions import TwilioRestException
-from twilio.rest import Client
+from rest_framework.response import Response
+from typing import Any
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.models import User
 from django.contrib.auth import authenticate
 from django.urls import reverse
 import boto3
 from botocore.exceptions import ClientError
+from django.http import JsonResponse
 
 allowed_characters = set(string.ascii_letters +
                          string.digits + string.punctuation)
@@ -232,3 +240,17 @@ class Utils:
             return return_data
         else:
             return None
+
+def api_response(message: "str", status_code: "int", status: "str", data: "Any" = []) -> Response:
+
+    response = {"message": message, "status": status, "results": data}
+
+    if status_code == 200:
+        return JsonResponse(response, status=HTTP_200_OK)
+
+    elif status_code == 201:
+        return JsonResponse(response, status=HTTP_201_CREATED)
+    elif status_code == 400:
+        return JsonResponse(response, status=HTTP_400_BAD_REQUEST)
+    elif status_code == 404:
+        return JsonResponse(response, status=HTTP_404_NOT_FOUND)
