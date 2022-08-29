@@ -21,7 +21,7 @@ django_application = get_asgi_application()
 
 # Import websocket application here, so apps from django_application are loaded first
 import socketio
-from chat.sockets import sio
+# from chat.sockets import sio
 
 
-application = socketio.ASGIApp(sio, django_application)
+# application = socketio.ASGIApp(sio, django_application)

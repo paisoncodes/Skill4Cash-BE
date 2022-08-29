@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "authentication.apps.AuthConfig",
     "services",
-    "chat",
+    # "chat",
 ]
 
 SITE_ID = 1
