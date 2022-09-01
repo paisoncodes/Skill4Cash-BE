@@ -19,6 +19,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.models import User
 from django.contrib.auth import authenticate
 from django.urls import reverse
+
 import boto3
 from botocore.exceptions import ClientError
 from django.http import JsonResponse
@@ -32,40 +33,6 @@ client = boto3.client(
     region_name=settings.AWS_REGION
 )
 
-
-def send_otp(phone):
-    try:
-        account_sid = settings.ACCOUNT_SID
-        auth_token = settings.AUTH_TOKEN
-
-        if phone:
-            # generating otp_code
-            code = [x for x in range(0, 9)]
-            otp_code = "".join([str(choice(code)) for x in range(5)])
-
-            # client = Client(account_sid, auth_token)
-            # # sending message
-            # client.messages.create(
-            #     from_= settings.MESSAGE_SERVICE,
-            #     # to= settings.TO,
-            #     to=str(phone),
-            #     body=f"Your Skill4Cash verification code is {otp_code}, don't share it with anybody."
-            # )
-            return otp_code
-
-    except TwilioRestException:
-        return None
-
-
-def otp_session(request, number):
-
-    otp_code = send_otp(number)
-
-    if otp_code:
-        request.session['code'] = otp_code
-        request.session['num'] = number
-        return True
-    return None
 
 
 class Utils:
@@ -240,6 +207,42 @@ class Utils:
             return return_data
         else:
             return None
+    
+    @staticmethod
+    def send_otp(phone):
+        try:
+            account_sid = settings.ACCOUNT_SID
+            auth_token = settings.AUTH_TOKEN
+
+            if phone:
+                # generating otp_code
+                code = [x for x in range(0, 9)]
+                otp_code = "".join([str(choice(code)) for x in range(5)])
+
+                # client = Client(account_sid, auth_token)
+                # # sending message
+                # client.messages.create(
+                #     from_= settings.MESSAGE_SERVICE,
+                #     # to= settings.TO,
+                #     to=str(phone),
+                #     body=f"Your Skill4Cash verification code is {otp_code}, don't share it with anybody."
+                # )
+                return otp_code
+
+        except TwilioRestException:
+            return None
+
+    @staticmethod
+    def otp_session(request, number):
+
+        otp_code = Utils.send_otp(number)
+
+        if otp_code:
+            request.session['code'] = otp_code
+            request.session['num'] = number
+            return True
+        return None
+
 
 def api_response(message: "str", status_code: "int", status: "str", data: "Any" = []) -> Response:
 
