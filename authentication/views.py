@@ -6,7 +6,7 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.shortcuts import get_list_or_404
+from django.shortcuts import get_list_or_404, get_object_or_404
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import HTTP
-from src.utils import Utils, api_response, otp_session
+from src.utils import Utils, api_response
 from drf_yasg.utils import swagger_auto_schema
 from decouple import config
 
@@ -300,7 +300,7 @@ class VerifyPhone(APIView):
         try:
             if not user.phone_verification:
                 if not "status_code" in request.session.keys():
-                    sent_otp = otp_session(request, phone_number)
+                    sent_otp = Utils.otp_session(request, phone_number)
                     if sent_otp:
                         return Response(
                             {
@@ -376,7 +376,7 @@ class UpdatePhone(APIView):
             if not User.objects.filter(phone_number__iexact=new_number).exists():
 
                 if not "status_code" in request.session.keys():
-                    sent_otp = otp_session(request, new_number)
+                    sent_otp = Utils.otp_session(request, new_number)
                     if sent_otp:
                         return Response(
                             {
@@ -458,7 +458,7 @@ class CustomerLogin(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
-            user = User.objects.get(email=request.data["email"])
+            user = get_object_or_404(User, email=request.data["email"])
             if user.role == "customer":
                 response = Utils.create_token(
                     email=request.data["email"], password=request.data["password"]
@@ -500,7 +500,7 @@ class ServiceProviderLogin(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
-            user = User.objects.get(email=request.data["email"])
+            user = get_object_or_404(User, email=request.data["email"])
             if user.role == "service_provider":
                 response = Utils.create_token(
                     email=request.data["email"], password=request.data["password"]

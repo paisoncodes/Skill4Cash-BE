@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "authentication.apps.AuthConfig",
     "services",
-    "chat",
+    # "chat",
 ]
 
 SITE_ID = 1
@@ -109,7 +109,7 @@ REST_FRAMEWORK = {
     ]
 }
 
-ASGI_APPLICATION = "src.asgi.application"
+# ASGI_APPLICATION = "src.asgi.application"
 WSGI_APPLICATION = "src.wsgi.application"
 
 
