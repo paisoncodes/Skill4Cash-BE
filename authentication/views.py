@@ -111,7 +111,6 @@ class CustomerRetrieveUpdateDelete(APIView):
             return None
 
     def get(self, request, id):
-
         if customer := self.get_object(id):
             serializer = CustomerSerializer(customer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -153,6 +152,7 @@ class ServiceProviderRegister(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
+        print(request.session.load())
         users_objs = get_list_or_404(User, role="service_provider")
         users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
         data = {
@@ -286,81 +286,74 @@ class VerifyEmail(APIView):
             )
 
 
+class GetOTP(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user = get_object_or_404(User, id=request.user.id)
+        phone_number = user.phone_number.raw_input
+        
+        if  phone_number is not None:
+            if (sent_otp := Utils.otp_session(phone_number)):
+                request.session['num'] = phone_number
+                request.session['code'] = sent_otp
+                return api_response(
+                        status_code=200,
+                        message="OTP sent successfully",
+                        status="Success",
+                    )
+            return api_response(
+                status_code=404, 
+                message="Sending OTP Error",
+                status="Failed"
+            )
+        return api_response(
+            status_code=400,
+            message="Phone number is Invalid",
+            status='Check Number'
+        )
+
+
 class VerifyPhone(APIView):
     serializer_class = VerificationSerializer
     permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
-
-        otp_code = request.data.get("otp")
-        user = User.objects.get(id=request.user.id)
-        phone_number = user["phone_number"]
-
-        try:
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = VerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            otp_code = serializer.validated_data.get('otp')
+            
             if not user.phone_verification:
-                if not "status_code" in request.session.keys():
-                    sent_otp = Utils.otp_session(request, phone_number)
-                    if sent_otp:
-                        return Response(
-                            {
-                                "status": status.HTTP_200_OK,
-                                "message": "OTP sent successfully",
-                            }
-                        )
-                    return Response(
-                        {
-                            "status": status.HTTP_400_BAD_REQUEST,
-                            "message": "Sending OTP Error",
-                        }
+                try:
+                    session_code = request.session.pop('code')
+                    
+                    if str(otp_code) == str(session_code):
+                        user.phone_verification = True
+                        user.save()
+                        return api_response(status_code=200,
+                            message="OTP Code Verified",
+                            status="Success")                    
+                    return api_response(status_code=400,
+                            message="OTP Incorrect!",
+                            status='Failed')              
+                except KeyError:
+                    return api_response(
+                        status_code=404,
+                        message="OTP code expired",
+                        status='Failed'
                     )
-                else:
-                    if otp_code:
-                        if str(otp_code) == str(request.session["status_code"]):
-                            user.phone_verification = True
-                            user.save()
 
-                            request.session.clear()
-                            return Response(
-                                {
-                                    "status": status.HTTP_200_OK,
-                                    "message": "OTP Code Verified",
-                                }
-                            )
-                        request.session.clear()
-                        return Response(
-                            {
-                                "status": status.HTTP_400_BAD_REQUEST,
-                                "message": "OTP Incorrect!",
-                            }
-                        )
-                    request.session.clear()
-                    return Response(
-                        {
-                            "status": status.HTTP_400_BAD_REQUEST,
-                            "message": "Invalid OTP!",
-                        }
-                    )
-            return Response(
-                {
-                    "status": status.HTTP_403_FORBIDDEN,
-                    "message": "Phone number already validated",
-                }
-            )
-        except jwt.ExpiredSignatureError:
-            return Response(
-                {
-                    "status": status.HTTP_400_BAD_REQUEST,
-                    "message": "Verification link expired",
-                }
-            )
-        except jwt.exceptions.DecodeError:
-            return Response(
-                {
-                    "status": status.HTTP_400_BAD_REQUEST,
-                    "message": "Invalid token",
-                }
-            )
+            return api_response(status_code=400,
+                message="Phone number already validated",
+                status='Already Verified')
+
+        return api_response(
+            status_code=400,
+            message="Error!",
+            status='Failed'
+        )
 
 
 class UpdatePhone(APIView):
@@ -369,78 +362,45 @@ class UpdatePhone(APIView):
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
+        user = get_object_or_404(User, id=request.user.id)
 
-        otp_code, new_number = request.data.get("otp"), request.data.get("number")
-        user = User.objects.get(id=request.user.id)
-        try:
+        serializer = UpdatePhoneSerializer(data=request.data)
+        if serializer.is_valid():
+            otp_code = serializer.validated_data.get('otp')
+            new_number = serializer.validated_data.get('number')
+        
             if not User.objects.filter(phone_number__iexact=new_number).exists():
-
-                if not "status_code" in request.session.keys():
-                    sent_otp = Utils.otp_session(request, new_number)
-                    if sent_otp:
-                        return Response(
-                            {
-                                "status": status.HTTP_200_OK,
-                                "message": "OTP sent successfully",
-                            }
-                        )
-                    return Response(
-                        {
-                            "status": status.HTTP_400_BAD_REQUEST,
-                            "message": "Sending OTP Error",
-                        }
+                if not "code" in request.session.keys():            
+                    return api_response(
+                        status_code=400,
+                        message="Generate New OTP",
+                        status='Failed'
                     )
-
                 else:
-                    if otp_code:
-                        if str(otp_code) == str(request.session["status_code"]):
+                    try:
+                        session_code = request.session.pop('code')
+                    
+                        if str(otp_code) == str(session_code):
                             user.phone_verification = True
                             user.phone_number = new_number
                             user.save()
-
-                            request.session.clear()
-                            return Response(
-                                {
-                                    "status": status.HTTP_200_OK,
-                                    "message": "OTP Code Verified",
-                                }
-                            )
-                        request.session.clear()
-                        return Response(
-                            {
-                                "status": status.HTTP_400_BAD_REQUEST,
-                                "message": "OTP Incorrect!",
-                            }
-                        )
-                    request.session.clear()
-                    return Response(
-                        {
-                            "status": status.HTTP_400_BAD_REQUEST,
-                            "message": "Invalid OTP!",
-                        }
-                    )
-
-            return Response(
-                {
-                    "status": status.HTTP_403_FORBIDDEN,
-                    "message": "Phone number already Exist",
-                }
-            )
-
-        except jwt.ExpiredSignatureError:
-            return Response(
-                {
-                    "status": status.HTTP_400_BAD_REQUEST,
-                    "message": "Verification link expired",
-                }
-            )
-        except jwt.exceptions.DecodeError:
-            return Response(
-                {
-                    "status": status.HTTP_400_BAD_REQUEST,
-                    "message": "Invalid token",
-                }
-            )
+                        return api_response(status_code=200,
+                            message="Phone number changed sucessfully",
+                            status="Success") 
+                    except KeyError:
+                        return api_response(
+                            status_code=403,
+                            message="OTP code expired",
+                            status='Failed')                                
+            return api_response(
+                status_code=400,
+                message="Phone number already Exist",
+                status='Failed')
+        return api_response(
+            status_code=400,
+            message="Error!",
+            status='Failed'
+        )
 
 
 class CustomerLogin(APIView):
