@@ -686,6 +686,7 @@ class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
 
+
 class DecodeToken(APIView):
     def post(self, request):
         token = request.data['token']

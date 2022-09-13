@@ -138,7 +138,9 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
         }
         read_only_fields = [
             "verified",
+            "gallery",
             "role",
+            "fullname",
             "email_verification",
             "phone_verification",
             "is_verified_business",
