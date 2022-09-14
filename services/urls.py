@@ -13,12 +13,12 @@ from .views import (
 )
 
 urlpatterns = [
-    path("review/", CreateReadReview.as_view(), name='review-list'),
-    path("reviews/", ReadSPReviews.as_view(), name='sp_review-list'),
-    path("category/", CreateReadCategory.as_view(), name="categories-list"),
-    path("schedule/", CreateReadSchedule.as_view(), name='schedule-list'),
-    path("schedules/", ReadSPSchedules.as_view(), name='sp_schedule-list'),
-    path("schedule/service-provider/<str:id>/",
+    path("reviews/", CreateReadReview.as_view(), name='review-list'),
+    path("sp/reviews/", ReadSPReviews.as_view(), name='sp_review-list'),
+    path("categories/", CreateReadCategory.as_view(), name="categories-list"),
+    path("schedules/", CreateReadSchedule.as_view(), name='schedule-list'),
+    path("sp/schedules/", ReadSPSchedules.as_view(), name='sp_schedule-list'),
+    path("sp/schedules/<str:id>/",
          ReadUpdateDeleteSchedule.as_view(), name='sch_sp-detail'),
     path('populate-sch-cat/', PopulateData.as_view()),
 ]
