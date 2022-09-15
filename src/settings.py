@@ -109,7 +109,7 @@ REST_FRAMEWORK = {
     ]
 }
 
-ASGI_APPLICATION = "src.asgi.application"
+# ASGI_APPLICATION = "src.asgi.application"
 WSGI_APPLICATION = "src.wsgi.application"
 
 
@@ -226,3 +226,4 @@ HTTP = config("HTTP")
 #         },
 #     },
 # }
+
