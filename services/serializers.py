@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from .models import (
     Rating,
-    Category,
     Schedule
 )
+from authentication.models import Category
 
 
 

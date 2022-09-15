@@ -7,19 +7,6 @@ from authentication.models import User
 # Create your models here.
 
 
-class Category(models.Model):
-    id = models.UUIDField(
-        primary_key=True, unique=True, editable=False, default=uuid.uuid4
-    )
-    name = models.CharField(max_length=225, unique=True)
-
-    class Meta:
-        verbose_name_plural = "Categories"
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class Rating(models.Model):
     id = models.UUIDField(
         primary_key=True, editable=False, unique=True, default=uuid.uuid4

@@ -4,7 +4,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
 
-from services.models import Category
 from .manager import UserManager
 import uuid
 from django.contrib.postgres.fields import ArrayField
@@ -53,7 +52,7 @@ class User(AbstractUser):
 
     # service provider information
     business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
-    service_category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    service_category = models.ForeignKey("Category", on_delete=models.CASCADE)
     keywords = ArrayField(models.CharField(max_length=225), default=list)
     gallery = ArrayField(
         models.ImageField(upload_to=upload_to_gallery, blank=True, null=True),
@@ -90,3 +89,15 @@ class User(AbstractUser):
     @property
     def location(self):
         return f"{self.city}, {self.state}"
+
+class Category(models.Model):
+    id = models.UUIDField(
+        primary_key=True, unique=True, editable=False, default=uuid.uuid4
+    )
+    name = models.CharField(max_length=225, unique=True)
+
+    class Meta:
+        verbose_name_plural = "Categories"
+
+    def __str__(self) -> str:
+        return self.name

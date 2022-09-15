@@ -1,9 +1,9 @@
 from .serializers import RatingSerializer, CategorySerializer, ScheduleSerializer
 
-from .models import Rating, Category, Schedule
+from .models import Rating, Schedule
 
 from authentication.models import (
-    User,
+    User, Category,
 )
 from random import choice
 from django.utils import timezone
