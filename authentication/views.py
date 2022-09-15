@@ -153,12 +153,36 @@ class ServiceProviderRegister(APIView):
 
     def get(self, request):
         print(request.session.load())
-        users_objs = get_list_or_404(User, role="service_provider")
-        users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
-        data = {
-            "message": "Successfully retrieved sp-customers",
-            "data": users_serilizer.data,
-        }
+        state = request.GET.get("state", None)
+        city = request.GET.get("city", None)
+        if state is None and city is None:
+            users_objs = get_list_or_404(User, role="service_provider")
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
+        elif state is not None and city is None:
+            users_objs = get_list_or_404(User, role="service_provider", state=state)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
+        elif state is None and city is not None:
+            users_objs = get_list_or_404(User, role="service_provider", city=city)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
+        else:
+            users_objs = get_list_or_404(User, role="service_provider", city=city, state=state)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
         return Response(data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(request_body=serializer_class)
