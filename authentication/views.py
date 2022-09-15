@@ -155,29 +155,58 @@ class ServiceProviderRegister(APIView):
         print(request.session.load())
         state = request.GET.get("state", None)
         city = request.GET.get("city", None)
-        if state is None and city is None:
+        category = request.GET.get("category", None)
+        if state is None and city is None and category is None:
             users_objs = get_list_or_404(User, role="service_provider")
             users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
             data = {
                 "message": "Successfully retrieved service_providers",
                 "data": users_serilizer.data,
             }
-        elif state is not None and city is None:
+        elif state is not None and city is None and category is None:
             users_objs = get_list_or_404(User, role="service_provider", state=state)
             users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
             data = {
                 "message": "Successfully retrieved service_providers",
                 "data": users_serilizer.data,
             }
-        elif state is None and city is not None:
+        elif state is not None and city is not None and category is None:
+            users_objs = get_list_or_404(User, role="service_provider", state=state, city=city)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
+        elif state is None and city is not None and category is None:
             users_objs = get_list_or_404(User, role="service_provider", city=city)
             users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
             data = {
                 "message": "Successfully retrieved service_providers",
                 "data": users_serilizer.data,
             }
+        elif state is None and city is not None and category is not None:
+            users_objs = get_list_or_404(User, role="service_provider", city=city, category=category)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
+        elif state is not None and city is None and category is not None:
+            users_objs = get_list_or_404(User, role="service_provider", city=city, category=category)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
+        elif state is None and city is None and category is not None:
+            users_objs = get_list_or_404(User, role="service_provider", category=category)
+            users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
+            data = {
+                "message": "Successfully retrieved service_providers",
+                "data": users_serilizer.data,
+            }
         else:
-            users_objs = get_list_or_404(User, role="service_provider", city=city, state=state)
+            users_objs = get_list_or_404(User, role="service_provider", city=city, state=state, category=category)
             users_serilizer = ServiceProviderRegistrationSerializer(users_objs, many=True)
             data = {
                 "message": "Successfully retrieved service_providers",
