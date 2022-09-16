@@ -52,7 +52,7 @@ class User(AbstractUser):
 
     # service provider information
     business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
-    service_category = models.ForeignKey("Category", on_delete=models.CASCADE)
+    service_category = models.ForeignKey("Category", on_delete=models.CASCADE, null = True, blank=True)
     keywords = ArrayField(models.CharField(max_length=225), default=list)
     gallery = ArrayField(
         models.ImageField(upload_to=upload_to_gallery, blank=True, null=True),

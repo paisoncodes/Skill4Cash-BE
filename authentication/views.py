@@ -81,16 +81,18 @@ class CustomerRegisterGetAll(APIView):
             user_data = request.data
             return_data = Utils.send_verification_link(user_data, request, serializer)
             if return_data:
+                response_data = {**serializer.data, **return_data}
                 return api_response(
                     status_code=201,
                     message="Customer created successfully",
-                    data=serializer.data,
+                    data=response_data,
                     status="Success",
                 )
             return api_response(
-                status_code=400,
-                message="Unable to send verification link",
-                status="Failed",
+                status_code=201,
+                message="Customer Created. Unable to send verification link",
+                data=serializer.data,
+                status="Success",
             )
         else:
             return api_response(

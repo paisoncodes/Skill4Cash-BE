@@ -6,7 +6,7 @@ from random import choice
 import jwt
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from twilio.base.exceptions import TwilioRestException
+from django.core.mail import send_mail
 from rest_framework.response import Response
 from typing import Any
 from rest_framework.status import (
@@ -38,7 +38,7 @@ client = boto3.client(
 class Utils:
 
     @staticmethod
-    def sending_email(data):
+    def sending_email(data:dict) -> str:
         try:
             response = client.send_email(
                 # using user's email after amazon verification
@@ -55,6 +55,19 @@ class Utils:
             return (e.response['Error']['Message'])
         else:
             return response['MessageId']
+    
+    @staticmethod
+    def gmail_send_email(data:dict) -> bool:
+        try:
+            subject = data['subject']
+            message = data['message']
+            from_email = settings.EMAIL_HOST_USER
+            recipient_list = data['recipients']
+            send_mail(subject, message, from_email, recipient_list, fail_silently=True)
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
     @staticmethod
     def validate_user_password(password):
@@ -186,11 +199,7 @@ class Utils:
             absolute_url = (
                 f"{settings.HTTP}{current_site}{relative_link}?token={str(token)}"
             )
-            email_body = f"""
-                    <h2>Hi, <small>{user_data['first_name']}</small></h2>    
-                    <h4>Use the link below to verify your email.</h4>
-                    <p>{absolute_url}</p>
-                    """
+            email_body = f"""\nHi, {user_data['first_name']}\n\nUse the link below to verify your email.\n\n{absolute_url}"""
 
             data = {
                 "email_subject": "Verify your email",
@@ -198,12 +207,24 @@ class Utils:
                 "to_email": user_data['email'],
             }
 
+            gmail_data = {
+                "subject": "Email Verification",
+                "message": email_body,
+                "recipients": [user_data['email'],]
+            }
+
             # result a message id, if sent successfully
             message_id = Utils.sending_email(data)
 
+            try:
+                sent = Utils.gmail_send_email(gmail_data)
+            except Exception as e:
+                print(e)
+                return None
+                
             return_data = dict(serializer.data)
             return_data["verification_link"] = absolute_url
-            return_data['message_sent'] = dict(message_id=message_id)
+            return_data['message_sent'] = sent
             return return_data
         else:
             return None
