@@ -85,7 +85,7 @@ class CustomerRegisterGetAll(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            user_data = serializer.data
+            user_data = request.data
             return_data = AuthUtil.send_verification_link(user_data, request, serializer)
             if return_data != None:
                 response_data = {**serializer.data, **return_data}
@@ -247,7 +247,7 @@ class ServiceProviderRegister(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            user_data = serializer.data
+            user_data = request.data
             return_data = AuthUtil.send_verification_link(user_data, request, serializer)
             if return_data != None:
                 return api_response(
