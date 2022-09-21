@@ -235,7 +235,7 @@ class AuthUtil:
             }
 
             # result a message id, if sent successfully
-            message_id = AuthUtil.sending_email(data)
+            # message_id = AuthUtil.sending_email(data)
 
             try:
                 sent = AuthUtil.gmail_send_email(gmail_data)

@@ -87,7 +87,7 @@ class CustomerRegisterGetAll(APIView):
 
             user_data = serializer.data
             return_data = AuthUtil.send_verification_link(user_data, request, serializer)
-            if return_data:
+            if return_data != None:
                 response_data = {**serializer.data, **return_data}
                 return api_response(
                     status_code=201,
@@ -249,7 +249,7 @@ class ServiceProviderRegister(APIView):
 
             user_data = serializer.data
             return_data = AuthUtil.send_verification_link(user_data, request, serializer)
-            if return_data:
+            if return_data != None:
                 return api_response(
                     status_code=201,
                     message="Customer created successfully",
