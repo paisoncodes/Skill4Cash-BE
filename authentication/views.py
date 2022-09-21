@@ -139,7 +139,7 @@ class CustomerRetrieveUpdateDelete(APIView):
         data = request.data
         if "profile_picture" in data.keys():
             data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = customer.email))
-        serializer = CustomerSerializer(customer, data=data)
+        serializer = CustomerSerializer(instance=customer, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

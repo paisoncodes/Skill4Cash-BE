@@ -191,10 +191,6 @@ class CustomerSerializer(serializers.ModelSerializer):
             "role",
             "fullname",
         )
-        extra_kwargs = {
-            "first_name": {"required": True},
-            "last_name": {"required": True},
-        }
         read_only_fields = [
             "verified",
             "role",
