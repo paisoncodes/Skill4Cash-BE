@@ -1,7 +1,11 @@
+import base64
 import re
 import string
 from datetime import time
 from random import choice
+import cloudinary
+from cloudinary import uploader, CloudinaryImage
+from decouple import config
 
 import jwt
 from django.conf import settings
@@ -35,7 +39,7 @@ client = boto3.client(
 
 
 
-class Utils:
+class AuthUtil:
 
     @staticmethod
     def sending_email(data:dict) -> str:
@@ -141,14 +145,31 @@ class Utils:
             return {"status": False, "message": "Enter Valid E-mail"}
     
     @staticmethod
-    def create_token(email:str, password:str) -> dict:
-        user = authenticate(email=email, password=password)
-        if user:
-            refresh = RefreshToken.for_user(user)
-            return {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            }
+    def create_token(password:str, email:str = None, phone_number:str = None) -> dict:
+        if email:
+            user = authenticate(email=email, password=password)
+            if user:
+                refresh = RefreshToken.for_user(user)
+                return {
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh)
+                }
+            else:
+                return {
+                    "error": "Invalid login details"
+                }
+        elif phone_number:
+            user = authenticate(phone_number=phone_number, password=password)
+            if user:
+                refresh = RefreshToken.for_user(user)
+                return {
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh)
+                }
+            else:
+                return {
+                    "error": "Invalid login details"
+                }
         else:
             return {
                 "error": "Invalid login details"
@@ -188,7 +209,7 @@ class Utils:
     @staticmethod
     def send_verification_link(user_data,request,serializer):
         
-        token = Utils.create_token(
+        token = AuthUtil.create_token(
                             user_data['email'], 
                             user_data['password']
                         )
@@ -214,10 +235,10 @@ class Utils:
             }
 
             # result a message id, if sent successfully
-            message_id = Utils.sending_email(data)
+            message_id = AuthUtil.sending_email(data)
 
             try:
-                sent = Utils.gmail_send_email(gmail_data)
+                sent = AuthUtil.gmail_send_email(gmail_data)
             except Exception as e:
                 print(e)
                 return None
@@ -248,6 +269,57 @@ class Utils:
         #     return None
         return otp_code
 
+class UploadUtil:
+    @staticmethod
+    def upload_profile_picture(image:str, email:str="skill4cash_user") -> dict:
+        try:
+            uploader.upload(image, public_id = f"{email}", unique_filename = False, overwrite=True, folder="profile")
+            srcURL = CloudinaryImage(f"profile/{email}").build_url()
+            return {
+                "success": True,
+                "message": "Upload successful",
+                "image_url": srcURL
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e),
+                "image_url": ""
+            }
+    @staticmethod
+    def upload_gallery_image(image:str, business_name:str="skill4cash_business_user", image_index:int=0) -> bool:
+        try:
+            uploader.upload(image, public_id = f"{business_name}-{image_index}", unique_filename = False, overwrite=True, folder="gallery")
+            srcURL = CloudinaryImage(f"gallery/{business_name}-{image_index}").build_url()
+            return {
+                "success": True,
+                "message": "Upload successful",
+                "image_url": srcURL
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e),
+                "image_url": ""
+            }
+
+    @staticmethod
+    def upload_document_image(document:str, document_name:str, business_name:str="skill4cash_business_document") -> bool:
+        try:
+            uploader.upload(document, public_id = f"{business_name}-{document_name}", unique_filename = False, overwrite=True, folder="document")
+            srcURL = CloudinaryImage(f"document/{business_name}-{document_name}").build_url()
+            return {
+                "success": True,
+                "message": "Upload successful",
+                "image_url": srcURL
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e),
+                "image_url": ""
+            }
+
 def api_response(message: "str", status_code: "int", status: "str", data: "Any" = []) -> Response:
 
     response = {"message": message, "status": status, "results": data}
@@ -261,3 +333,10 @@ def api_response(message: "str", status_code: "int", status: "str", data: "Any" 
         return JsonResponse(response, status=HTTP_400_BAD_REQUEST)
     elif status_code == 404:
         return JsonResponse(response, status=HTTP_404_NOT_FOUND)
+
+cloudinary.config(
+    cloud_name = config("CLOUDINARY_CLOUD_NAME"),
+    api_key = config("CLOUDINARY_API_KEY"), 
+    api_secret = config("CLOUDINARY_API_SECRET"),
+    secure = True
+)

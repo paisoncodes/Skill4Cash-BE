@@ -9,21 +9,6 @@ import uuid
 from django.contrib.postgres.fields import ArrayField
 
 
-def upload_to_card_front(instance, filename):
-    return f"cardfront-img/{filename}"
-
-
-def upload_to_card_back(instance, filename):
-    return f"cardback-img/{filename}"
-
-
-def upload_to_pob(instance, filename):
-    return f"pob-img/{filename}"
-
-
-def upload_to_gallery(instance, filename):
-    return f"gallery-img/{filename}"
-
 
 class User(AbstractUser):
 
@@ -49,22 +34,16 @@ class User(AbstractUser):
     city = models.CharField(max_length=100, default="everywhere")
     phone_verification = models.BooleanField(default=False)
     email_verification = models.BooleanField(default=False)
-
+    profile_picture = models.URLField(default="https://res.cloudinary.com/skill4cash/image/upload/v1/profile/default")
+    
     # service provider information
     business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
     service_category = models.ForeignKey("Category", on_delete=models.CASCADE, null = True, blank=True)
     keywords = ArrayField(models.CharField(max_length=225), default=list)
-    gallery = ArrayField(
-        models.ImageField(upload_to=upload_to_gallery, blank=True, null=True),
-        default=list,
-    )
-    card_front = models.ImageField(
-        upload_to=upload_to_card_front, blank=True, null=True
-    )
-    card_back = models.ImageField(upload_to=upload_to_card_back, blank=True, null=True)
-    pob = models.ImageField(
-        verbose_name="Proof of business", upload_to=upload_to_pob, blank=True, null=True
-    )
+    gallery = ArrayField(models.URLField(), default=list)
+    card_front = models.URLField(default="")
+    card_back = models.URLField(default="")
+    pob = models.URLField(verbose_name="Proof of Business", default="")
     is_verified_business = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
@@ -101,3 +80,9 @@ class Category(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+class TestImageUpload(models.Model):
+    name = models.CharField(max_length=40)
+    image1 = models.URLField()
+    image2 = models.URLField()
+    image3 = models.URLField()

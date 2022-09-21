@@ -16,6 +16,7 @@ from datetime import timedelta
 import dj_database_url
 import django_heroku
 import os
+import cloudinary
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     "authentication.apps.AuthConfig",
     "services",
     # "chat",
+    "cloudinary",
 ]
 
 SITE_ID = 1
@@ -140,7 +142,15 @@ else:
         }
     }
 
+# Cloudinary configuration
+cloudinary.config(
+    cloud_name = config("CLOUDINARY_CLOUD_NAME"),
+    api_key = config("CLOUDINARY_API_KEY"), 
+    api_secret = config("CLOUDINARY_API_SECRET"),
+    secure = True
+)
 
+# Email configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True

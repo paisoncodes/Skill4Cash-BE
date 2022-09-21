@@ -1,6 +1,6 @@
 from drf_yasg import openapi
 import jwt
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -14,30 +14,32 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import HTTP
-from src.utils import Utils, api_response
+from src.utils import AuthUtil, UploadUtil, api_response
 from drf_yasg.utils import swagger_auto_schema
 from decouple import config
 
-from .models import User
-from .permissions import PostReadAllPermission
+from .models import TestImageUpload, User
 from .serializers import (
     CustomerRegistrationSerializer,
     CustomerSerializer,
+    EmailLoginSerializer,
+    PhoneLoginSerializer,
     ServiceProviderSerializer,
     ServiceProviderRegistrationSerializer,
+    TestImageUploadSerializer,
     TokenRefreshSerializer,
     UpdatePhoneSerializer,
     VerificationSerializer,
     UserSerializer,
-    LoginSerializer,
 )
 
 
 class CustomerRegisterGetAll(APIView):
-    # permission_classes = (PostReadAllPermission,)
     serializer_class = CustomerRegistrationSerializer
-
     def get(self, request):
+        """
+        This endpoint returns list of existing customers.
+        """
         state = request.GET.get("state", None)
         city = request.GET.get("city", None)
         if state is None and city is None:
@@ -73,13 +75,18 @@ class CustomerRegisterGetAll(APIView):
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
-
-        serializer = CustomerRegistrationSerializer(data=request.data)
+        """
+        This endpoint creates a new customer in the database.
+        """
+        data = request.data
+        if "profile_picture" in data.keys():
+            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email=data["email"]))
+        serializer = CustomerRegistrationSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
 
-            user_data = request.data
-            return_data = Utils.send_verification_link(user_data, request, serializer)
+            user_data = serializer.data
+            return_data = AuthUtil.send_verification_link(user_data, request, serializer)
             if return_data:
                 response_data = {**serializer.data, **return_data}
                 return api_response(
@@ -113,6 +120,9 @@ class CustomerRetrieveUpdateDelete(APIView):
             return None
 
     def get(self, request, id):
+        """
+        This endpoint returns a customer's details.
+        """
         if customer := self.get_object(id):
             serializer = CustomerSerializer(customer)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -122,19 +132,24 @@ class CustomerRetrieveUpdateDelete(APIView):
             )
 
     def put(self, request, id):
-        if customer := self.get_object(id):
-            serializer = CustomerSerializer(customer, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        """
+        This endpoint updates a customer's information.
+        """
+        customer = User.objects.get(email=request.user.email)
+        data = request.data
+        if "profile_picture" in data.keys():
+            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = customer.email))
+        serializer = CustomerSerializer(customer, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(
-                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
-            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, id):
+        """
+        This endpoint deletes a customer record from the database.
+        """
         if customer := self.get_object(id):
             customer.delete()
             return Response(
@@ -154,7 +169,9 @@ class ServiceProviderRegister(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        print(request.session.load())
+        """
+        This endpoint returns list of services registered. You can also filter with location (i.e, state and city), and category.
+        """
         state = request.GET.get("state", None)
         city = request.GET.get("city", None)
         service_category = request.GET.get("category", None)
@@ -218,13 +235,20 @@ class ServiceProviderRegister(APIView):
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
-        serializer = ServiceProviderRegistrationSerializer(data=request.data)
+        """
+        This endpoint creates a new service provider record in the database.
+        """
+
+        data = request.data
+        if "profile_picture" in data.keys():
+            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email=data["email"]))
+        serializer = ServiceProviderRegistrationSerializer(data=data)
 
         if serializer.is_valid():
             serializer.save()
 
-            user_data = request.data
-            return_data = Utils.send_verification_link(user_data, request, serializer)
+            user_data = serializer.data
+            return_data = AuthUtil.send_verification_link(user_data, request, serializer)
             if return_data:
                 return api_response(
                     status_code=201,
@@ -248,57 +272,51 @@ class ServiceProviderRegister(APIView):
 class ServiceProviderRetrieveUpdateDelete(APIView):
     serializer_class = ServiceProviderSerializer
     permission_classes = (IsAuthenticated,)
-    parser_classes = [MultiPartParser, FormParser]
 
-    def get_object(self, id):
-        try:
-            return User.objects.get(pk=id)
-        except User.DoesNotExist:
-            return None
-
-    def get(self, request, id, format=None):
-
-        if service_provider := self.get_object(id):
-            serializer = ServiceProviderSerializer(service_provider)
+    def get(self, request):
+        """
+        This endpoint returns a single service detail. You can get the service by either their id or their name(business name).
+        """
+        id = request.GET.get("state", None)
+        name = request.GET.get("city", None)
+        if id is not None and name is None:
+            try:
+                service_provider = User.objectsget(id=id)
+                serializer = ServiceProviderSerializer(service_provider)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({"message": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+        elif id is None and name is not None:
+            try:
+                service_provider = User.objectsget(business_name=name)
+                serializer = ServiceProviderSerializer(service_provider)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({"message": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({"message": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+            
+    
+    def put(self, request):
+        """
+        This endpoint updates a service info
+        """
+        service_provider = User.objects.get(email=request.user.email)
+        data= request.data
+        if "profile_picture" in data.keys():
+            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = service_provider.email))
+        serializer = ServiceProviderSerializer(service_provider, data=data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(
-                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
-            )
-            
-    @swagger_auto_schema(
-            operation_id='Create a document',
-            operation_description='Create a document by providing file and s3_key',
-            manual_parameters=[
-                openapi.Parameter('file', openapi.IN_FORM, type=openapi.TYPE_FILE, description='Document to be uploaded'),
-                openapi.Parameter('s3_key', openapi.IN_FORM, type=openapi.TYPE_STRING, description='S3 Key of the Document '
-                                                                                                   '(folders along with name)')
-            ],
-            responses={
-                status.HTTP_200_OK: openapi.Response(
-                    'Success', schema=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                        'doc_id': openapi.Schema(type=openapi.TYPE_STRING, description='Document ID'),
-                        'mime_type': openapi.Schema(type=openapi.TYPE_STRING, description='Mime Type of the Document'),
-                        'version_id': openapi.Schema(type=openapi.TYPE_STRING, description='S3 version ID of the document')
-                    })
-                )
-            }
-        )
-    def put(self, request, id):
-        if service_provider := self.get_object(id):
-            serializer = ServiceProviderSerializer(service_provider, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response(
-                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
-            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, id):
-
+        """
+        This endpoint deletes a specified service from the database.
+        """
         if service_provider := self.get_object(id):
             service_provider.delete()
             return Response(
@@ -317,6 +335,9 @@ class VerifyEmail(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
+        """
+        This endpoint verifies a user's email token.
+        """
         token = request.GET.get("token")
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -345,11 +366,14 @@ class GetOTP(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        """
+        This endpoint sends OTP to users.
+        """
         user = get_object_or_404(User, id=request.user.id)
         phone_number = user.phone_number.raw_input
         
         if  phone_number is not None:
-            if (sent_otp := Utils.otp_session(phone_number)):
+            if (sent_otp := AuthUtil.otp_session(phone_number)):
                 request.session['num'] = phone_number
                 request.session['code'] = sent_otp
                 return api_response(
@@ -375,6 +399,9 @@ class VerifyPhone(APIView):
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
+        """
+        This endpoint verfies users' phone number.
+        """
         user = get_object_or_404(User, id=request.user.id)
         serializer = VerificationSerializer(data=request.data)
         if serializer.is_valid():
@@ -417,6 +444,9 @@ class UpdatePhone(APIView):
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
+        """
+        This endpoint updates user's phone number.
+        """
         user = get_object_or_404(User, id=request.user.id)
 
         serializer = UpdatePhoneSerializer(data=request.data)
@@ -458,11 +488,14 @@ class UpdatePhone(APIView):
         )
 
 
-class CustomerLogin(APIView):
-    serializer_class = LoginSerializer
+class CustomerEmailLogin(APIView):
+    serializer_class = EmailLoginSerializer
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
+        """
+        This endpoint logs customers in with their email and password.
+        """
         if "email" not in request.data.keys() or "password" not in request.data.keys():
             return Response(
                 {
@@ -475,7 +508,7 @@ class CustomerLogin(APIView):
         else:
             user = get_object_or_404(User, email=request.data["email"])
             if user.role == "customer":
-                response = Utils.create_token(
+                response = AuthUtil.create_token(
                     email=request.data["email"], password=request.data["password"]
                 )
                 if "error" in response.keys():
@@ -500,11 +533,58 @@ class CustomerLogin(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+class CustomerPhoneLogin(APIView):
+    serializer_class = PhoneLoginSerializer
 
-class ServiceProviderLogin(APIView):
-    serializer_class = LoginSerializer
+    @swagger_auto_schema(request_body=serializer_class)
+    def post(self, request):
+        """
+        This endpoint logs customers in with their phone number and password.
+        """
+        if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
+            return Response(
+                {
+                    "status_code": 400,
+                    "status": "Failed",
+                    "message": "Please enter your phone number and password.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        else:
+            user = get_object_or_404(User, phone_number=request.data["phone_number"])
+            if user.role == "customer":
+                response = AuthUtil.create_token(
+                    phone_number=request.data["phone_number"], password=request.data["password"]
+                )
+                if "error" in response.keys():
+                    return Response(
+                        {"status_code": 400, "status": "Failed", "message": response},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                else:
+                    return api_response(
+                        status_code=200,
+                        message="Login successful",
+                        data=response,
+                        status="Success",
+                    )
+            else:
+                return Response(
+                    {
+                        "status_code": 400,
+                        "status": "Failed",
+                        "message": "You're not a customer. Try the logging in as a service provider",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+
+class ServiceProviderEmailLogin(APIView):
+    serializer_class = EmailLoginSerializer
 
     def post(self, request):
+        """This endpoint logs services in with their email and password.
+        """
         if "email" not in request.data.keys() or "password" not in request.data.keys():
             return Response(
                 {
@@ -517,8 +597,51 @@ class ServiceProviderLogin(APIView):
         else:
             user = get_object_or_404(User, email=request.data["email"])
             if user.role == "service_provider":
-                response = Utils.create_token(
+                response = AuthUtil.create_token(
                     email=request.data["email"], password=request.data["password"]
+                )
+                if "error" in response.keys():
+                    return Response(
+                        {"status_code": 400, "status": "Failed", "message": response},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                else:
+                    return api_response(
+                        status_code=200,
+                        message="Login successful",
+                        data=response,
+                        status="Success",
+                    )
+            else:
+                return Response(
+                    {
+                        "status_code": 400,
+                        "status": "Failed",
+                        "message": "You're not a service_provider. Try the logging in as a customer",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+class ServiceProviderPhoneLogin(APIView):
+    serializer_class = PhoneLoginSerializer
+
+    def post(self, request):
+        """
+        This endpoint logs services in with their phone number and password.
+        """
+        if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
+            return Response(
+                {
+                    "status_code": 400,
+                    "status": "Failed",
+                    "message": "Please enter your phone_number and password.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        else:
+            user = get_object_or_404(User, phone_number=request.data["phone_number"])
+            if user.role == "service_provider":
+                response = AuthUtil.create_token(
+                    phone_number=request.data["phone_number"], password=request.data["password"]
                 )
                 if "error" in response.keys():
                     return Response(
@@ -547,6 +670,9 @@ class RefreshToken(APIView):
     serializer_class = TokenRefreshSerializer
 
     def post(self, request):
+        """
+        This endpoint generates a new accesstoken for users.
+        """
         if "refresh" not in request.POST:
             return Response(
                 {
@@ -557,7 +683,7 @@ class RefreshToken(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
-            response = Utils.refresh_token(refresh=request.data.get("refresh"))
+            response = AuthUtil.refresh_token(refresh=request.data.get("refresh"))
             if "error" in response.keys():
                 return Response(
                     {"status_code": 401, "status": "Failed", "message": response},
@@ -579,6 +705,9 @@ class ChangePassword(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
+        """
+        This endpoint changes the user's password.
+        """
         data = {}
         old_password = request.data["old_password"]
         password = request.data["password"]
@@ -596,7 +725,7 @@ class ChangePassword(APIView):
         user = authenticate(email=email, password=old_password)
 
         if user:
-            password_validity = Utils.validate_password(password=password)
+            password_validity = AuthUtil.validate_password(password=password)
             if password_validity["status"]:
                 if password == password2:
                     user = User.objects.get(email=email)
@@ -626,6 +755,9 @@ class ResetPasswordEmail(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+        """
+        This endpoint sends a reset token to users' emails.
+        """
         email = request.data["email"]
         if User.objects.filter(email=email).exists():
             user = User.objects.get(email=email)
@@ -647,7 +779,7 @@ class ResetPasswordEmail(APIView):
                 "to_email": user.email,
             }
 
-            Utils.sending_email(data)
+            AuthUtil.sending_email(data)
 
             return Response(
                 {
@@ -666,11 +798,14 @@ class ResetPassword(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
+        """
+        This endpoint resets a user's password.
+        """
         email = request.data["email"]
         password = request.data["password"]
         password2 = request.data["password2"]
 
-        password_validity = Utils.validate_password(password)
+        password_validity = AuthUtil.validate_password(password)
 
         if password_validity["status"]:
             if password2 == password:
@@ -708,3 +843,76 @@ class DecodeToken(APIView):
         data = jwt.decode(token, config('SECRET_KEY'), algorithms=["HS256"])
         user = UserSerializer(User.objects.get(id=data["user_id"])).data
         return api_response(status_code=200, message="successful", status="success", data=user)
+
+class TestImageUploadView(APIView):
+    queryset = TestImageUpload.objects.all()
+    serializer_class = TestImageUploadSerializer
+
+    @swagger_auto_schema(request_body=serializer_class)
+    def post(self, request):
+        """
+        This is a test endpoint.
+        """
+        data = request.data
+        data["image1"] = (UploadUtil.upload_gallery_image(data["image1"], business_name="Test_business", image_index=1))["image_url"]
+        data["image2"] = (UploadUtil.upload_gallery_image(data["image2"], business_name="Test_business", image_index=2))["image_url"]
+        data["image3"] = (UploadUtil.upload_gallery_image(data["image3"], business_name="Test_business", image_index=3))["image_url"]
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ServiceProviderGalleryUpload(APIView):
+    queryset = User.objects.all()
+    serializer_class = ServiceProviderSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request):
+        """
+        This endpoint updates services' galleries.
+        """
+        service_provider = User.objects.get(email=request.user.email)
+        incoming = request.data
+        incoming["image1"] = (UploadUtil.upload_gallery_image(incoming["image1"], business_name=service_provider.business_name, image_index=1))["image_url"]
+        incoming["image2"] = (UploadUtil.upload_gallery_image(incoming["image2"], business_name=service_provider.business_name, image_index=2))["image_url"]
+        incoming["image3"] = (UploadUtil.upload_gallery_image(incoming["image3"], business_name=service_provider.business_name, image_index=3))["image_url"]
+        incoming["image4"] = (UploadUtil.upload_gallery_image(incoming["image4"], business_name=service_provider.business_name, image_index=4))["image_url"]
+        incoming["image5"] = (UploadUtil.upload_gallery_image(incoming["image5"], business_name=service_provider.business_name, image_index=5))["image_url"]
+        data = {
+            "gallery": [incoming["image1"],incoming["image2"],incoming["image3"],incoming["image4"],incoming["image5"],]
+        }
+
+        serializer = self.serializer_class(service_provider, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ServiceProviderDocumentUpload(APIView):
+    queryset = User.objects.all()
+    serializer_class = ServiceProviderSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request):
+        """
+        This endpoints updates services' documents.
+        """
+        service_provider = User.objects.get(email=request.user.email)
+        incoming = request.data
+        incoming["card_front"] = (UploadUtil.upload_document_image(incoming["card_front"], "card_front", business_name=service_provider.business_name))["image_url"]
+        incoming["card_back"] = (UploadUtil.upload_document_image(incoming["card_back"], "card_back", business_name=service_provider.business_name))["image_url"]
+        incoming["pob"] = (UploadUtil.upload_document_image(incoming["pob"], "pob", business_name=service_provider.business_name))["image_url"]
+        
+
+        serializer = self.serializer_class(service_provider, data=incoming)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResendVerification(APIView):
+    pass

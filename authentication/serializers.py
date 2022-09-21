@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework.validators import UniqueValidator
-from .models import User
+from .models import TestImageUpload, User
 from phonenumber_field.modelfields import PhoneNumberField
-from src.utils import Utils
+from src.utils import AuthUtil
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -18,6 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "state",
             "city",
+            "profile_picture",
         )
 
 
@@ -29,7 +30,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[Utils.validate_user_password],
+        validators=[AuthUtil.validate_user_password],
         help_text=""" Password must be at least 8 characters 
                         and must contain at least one uppercase letter, 
                         one smaller letter, one digit, and one special character.
@@ -48,6 +49,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "password",
+            "profile_picture",
             "confirm_password",
             "state",
             "city",
@@ -100,7 +102,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[Utils.validate_user_password],
+        validators=[AuthUtil.validate_user_password],
         help_text=""" Password must be at least 8 characters 
                         and must contain at least one uppercase letter, 
                         one smaller letter, one digit, and one special character.
@@ -121,6 +123,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
             "state",
+            "profile_picture",
             "city",
             "verified",
             "gallery",
@@ -181,6 +184,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "last_name",
             "state",
             "city",
+            "profile_picture",
             "verified",
             "email_verification",
             "phone_verification",
@@ -225,6 +229,7 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
             "city",
             "business_name",
             "service_category",
+            "profile_picture",
             "keywords",
             "gallery",
             "card_front",
@@ -275,10 +280,20 @@ class UpdatePhoneSerializer(serializers.Serializer):
     number = serializers.CharField(required=True, write_only=True)
 
 
-class LoginSerializer(serializers.Serializer):
+class EmailLoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True)
+
+class PhoneLoginSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
     password = serializers.CharField(required=True)
 
 
 class TokenRefreshSerializer(serializers.Serializer):
     refresh = serializers.CharField(required=True)
+
+class TestImageUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestImageUpload
+        fields = ["name", "image1", "image2", "image3"]
+
