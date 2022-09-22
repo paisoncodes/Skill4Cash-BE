@@ -16,8 +16,11 @@ from typing import Any
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_202_ACCEPTED,
+    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
+    HTTP_406_NOT_ACCEPTABLE,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.models import User
@@ -209,46 +212,40 @@ class AuthUtil:
     @staticmethod
     def send_verification_link(user_data,request,serializer):
         
-        token = AuthUtil.create_token(
-                            user_data['email'], 
-                            user_data['password']
-                        )
-        if "error" not in token.keys():
-            token = token['access']
-            relative_link = reverse("verify_email")
-            current_site = request.get_host()
-            absolute_url = (
-                f"{settings.HTTP}{current_site}{relative_link}?token={str(token)}"
-            )
-            email_body = f"""\nHi, {user_data['first_name']}\n\nUse the link below to verify your email.\n\n{absolute_url}"""
+        user = User.objects.get(id=dict(serializer.data)['id'])
+        token = RefreshToken.for_user(user)
+        relative_link = reverse("verify_email")
+        current_site = request.get_host()
+        absolute_url = (
+            f"{settings.HTTP}{current_site}{relative_link}?token={str(token.access_token)}"
+        )
+        email_body = f"""\nHi, {user_data['first_name']}\n\nUse the link below to verify your email.\n\n{absolute_url}"""
 
-            data = {
-                "email_subject": "Verify your email",
-                "email_body": email_body,
-                "to_email": user_data['email'],
-            }
+        data = {
+            "email_subject": "Verify your email",
+            "email_body": email_body,
+            "to_email": user_data['email'],
+        }
 
-            gmail_data = {
-                "subject": "Email Verification",
-                "message": email_body,
-                "recipients": [user_data['email'],]
-            }
+        gmail_data = {
+            "subject": "Email Verification",
+            "message": email_body,
+            "recipients": [user_data['email'],]
+        }
 
-            # result a message id, if sent successfully
-            # message_id = AuthUtil.sending_email(data)
+        # result a message id, if sent successfully
+        # message_id = AuthUtil.sending_email(data)
 
-            try:
-                sent = AuthUtil.gmail_send_email(gmail_data)
-            except Exception as e:
-                print(e)
-                return None
-                
-            return_data = dict(serializer.data)
-            return_data["verification_link"] = absolute_url
-            return_data['message_sent'] = sent
-            return return_data
-        else:
+        try:
+            sent = AuthUtil.gmail_send_email(gmail_data)
+        except Exception as e:
+            print(e)
             return None
+            
+        return_data = dict(serializer.data)
+        return_data["verification_link"] = absolute_url
+        return_data['message_sent'] = sent
+        return return_data
     
     @staticmethod
     def otp_session(number):
@@ -329,14 +326,13 @@ def api_response(message: "str", status_code: "int", status: "str", data: "Any" 
 
     elif status_code == 201:
         return JsonResponse(response, status=HTTP_201_CREATED)
+    elif status_code == 202:
+        return JsonResponse(response, status=HTTP_202_ACCEPTED)
+    elif status_code == 204:
+        return JsonResponse(response, status=HTTP_204_NO_CONTENT)
     elif status_code == 400:
         return JsonResponse(response, status=HTTP_400_BAD_REQUEST)
     elif status_code == 404:
         return JsonResponse(response, status=HTTP_404_NOT_FOUND)
-
-cloudinary.config(
-    cloud_name = config("CLOUDINARY_CLOUD_NAME"),
-    api_key = config("CLOUDINARY_API_KEY"), 
-    api_secret = config("CLOUDINARY_API_SECRET"),
-    secure = True
-)
+    elif status_code == 406:
+        return JsonResponse(response, status=HTTP_406_NOT_ACCEPTABLE)

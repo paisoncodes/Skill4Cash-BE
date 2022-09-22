@@ -64,6 +64,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             "last_name": {"required": True},
         }
         read_only_fields = [
+            "id",
             "verified",
             "role",
             "email_verification",
@@ -180,6 +181,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "id",
+            "email",
             "first_name",
             "last_name",
             "state",
@@ -219,6 +221,7 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "id",
+            "email",
             "first_name",
             "last_name",
             "state",

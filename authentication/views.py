@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from authentication.utility import update_customer, update_service_provider
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import HTTP
 from src.utils import AuthUtil, UploadUtil, api_response
@@ -71,7 +72,7 @@ class CustomerRegisterGetAll(APIView):
                 "data": users_serilizer.data,
             }
 
-        return Response(data, status=status.HTTP_200_OK)
+        return api_response(data["message"], 200, "Success", data["data"])
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
@@ -125,12 +126,9 @@ class CustomerRetrieveUpdateDelete(APIView):
         """
         if customer := self.get_object(id):
             serializer = CustomerSerializer(customer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return api_response("User retrieved", 200, "Success", serializer.data)
         else:
-            return Response(
-                {"message": "Invalid User ID"}, status=status.HTTP_404_NOT_FOUND
-            )
-
+            return api_response("Invalid User ID", 404, "Failed")
     def put(self, request, id):
         """
         This endpoint updates a customer's information.
@@ -138,13 +136,15 @@ class CustomerRetrieveUpdateDelete(APIView):
         customer = User.objects.get(email=request.user.email)
         data = request.data
         if "profile_picture" in data.keys():
-            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = customer.email))
-        serializer = CustomerSerializer(instance=customer, data=data)
+            print("here")
+            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = customer.email))["image_url"]
+        upload = update_customer((self.serializer_class(customer)).data, data)
+        serializer = CustomerSerializer(instance=customer, data=upload)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return api_response("Update successful", 202, "Success", serializer.data)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response("Update failed", 400, "Failed", serializer.errors)
 
     def delete(self, request, id):
         """
@@ -152,16 +152,9 @@ class CustomerRetrieveUpdateDelete(APIView):
         """
         if customer := self.get_object(id):
             customer.delete()
-            return Response(
-                {
-                    "message": "User deleted successfully",
-                    "status": status.HTTP_204_NO_CONTENT,
-                }
-            )
+            return api_response("User deleted successfully", 204, "Success")
         else:
-            return Response(
-                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
-            )
+            return api_response("Invalid User ID", 404, "Failed")
 
 
 class ServiceProviderRegister(APIView):
@@ -231,7 +224,7 @@ class ServiceProviderRegister(APIView):
                 "message": "Successfully retrieved service_providers",
                 "data": users_serilizer.data,
             }
-        return Response(data, status=status.HTTP_200_OK)
+        return api_response(data["message"], 200, "Success", data["data"])
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
@@ -283,18 +276,18 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             try:
                 service_provider = User.objectsget(id=id)
                 serializer = ServiceProviderSerializer(service_provider)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                return api_response("Service provider found", 200, "Success", serializer.data)
             except User.DoesNotExist:
-                return Response({"message": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+                api_response("Service provider not found", 404, "Failed")
         elif id is None and name is not None:
             try:
                 service_provider = User.objectsget(business_name=name)
                 serializer = ServiceProviderSerializer(service_provider)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except User.DoesNotExist:
-                return Response({"message": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+                return api_response("Service provider not found", 404, "Failed")
         else:
-            return Response({"message": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+            return api_response("Service provider not found", 404, "Failed")
         
             
     
@@ -305,13 +298,14 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         service_provider = User.objects.get(email=request.user.email)
         data= request.data
         if "profile_picture" in data.keys():
-            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = service_provider.email))
-        serializer = ServiceProviderSerializer(service_provider, data=data)
+            data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = service_provider.email))["image_url"]
+        upload = update_service_provider((self.serializer_class(service_provider)).data, data)
+        serializer = ServiceProviderSerializer(service_provider, data=upload)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return api_response("Update successful", 202, "Success", serializer.data)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response("Update failed", 400, "Failed", serializer.errors)
 
     def delete(self, request, id):
         """
@@ -319,16 +313,9 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         """
         if service_provider := self.get_object(id):
             service_provider.delete()
-            return Response(
-                {
-                    "message": "User deleted successfully",
-                    "status": status.HTTP_204_NO_CONTENT,
-                }
-            )
+            return api_response("User deleted successfully", 204, "Success")
         else:
-            return Response(
-                {"message": "Invalid User ID", "status": status.HTTP_404_NOT_FOUND}
-            )
+            return api_response("Invalid User ID", 404, "Failed")
 
 
 class VerifyEmail(APIView):
@@ -348,18 +335,11 @@ class VerifyEmail(APIView):
                 user.email_verification = True
                 user.save()
 
-            return Response(
-                {"email": "user email verified successfully"}, status=status.HTTP_200_OK
-            )
+            return api_response("User email verified successfully", 200, "Success")
         except jwt.ExpiredSignatureError:
-            return Response(
-                {"error": "Verification link expired"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("Verification link expired", 400, "Failed")
         except jwt.exceptions.DecodeError:
-            return Response(
-                {"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return api_response("Invalid token", 400, "Failed")
 
 
 class GetOTP(APIView):
@@ -497,25 +477,18 @@ class CustomerEmailLogin(APIView):
         This endpoint logs customers in with their email and password.
         """
         if "email" not in request.data.keys() or "password" not in request.data.keys():
-            return Response(
-                {
-                    "status_code": 400,
-                    "status": "Failed",
-                    "message": "Please enter your email address and password.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("Please enter your email and password.", 400, "Failed")
         else:
-            user = get_object_or_404(User, email=request.data["email"])
+            try:
+                user = User.objects.get(email=request.data["email"])
+            except User.DoesNotExist:
+                return api_response("Invalid login details", 400, "Failed")
             if user.role == "customer":
                 response = AuthUtil.create_token(
                     email=request.data["email"], password=request.data["password"]
                 )
                 if "error" in response.keys():
-                    return Response(
-                        {"status_code": 400, "status": "Failed", "message": response},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    return api_response(response["error"], 400, "Failed")
                 else:
                     return api_response(
                         status_code=200,
@@ -524,14 +497,7 @@ class CustomerEmailLogin(APIView):
                         status="Success",
                     )
             else:
-                return Response(
-                    {
-                        "status_code": 400,
-                        "status": "Failed",
-                        "message": "You're not a customer. Try the logging in as a service provider",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
 
 class CustomerPhoneLogin(APIView):
     serializer_class = PhoneLoginSerializer
@@ -542,25 +508,18 @@ class CustomerPhoneLogin(APIView):
         This endpoint logs customers in with their phone number and password.
         """
         if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
-            return Response(
-                {
-                    "status_code": 400,
-                    "status": "Failed",
-                    "message": "Please enter your phone number and password.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("Please enter your phone number and password.", 400, "Failed")
         else:
-            user = get_object_or_404(User, phone_number=request.data["phone_number"])
+            try:
+                user = User.objects.get(phone_number=request.data["phone_number"])
+            except User.DoesNotExist:
+                return api_response("Invalid login details", 400, "Failed")
             if user.role == "customer":
                 response = AuthUtil.create_token(
                     phone_number=request.data["phone_number"], password=request.data["password"]
                 )
                 if "error" in response.keys():
-                    return Response(
-                        {"status_code": 400, "status": "Failed", "message": response},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    return api_response(response["error"], 400, "Failed")
                 else:
                     return api_response(
                         status_code=200,
@@ -569,14 +528,7 @@ class CustomerPhoneLogin(APIView):
                         status="Success",
                     )
             else:
-                return Response(
-                    {
-                        "status_code": 400,
-                        "status": "Failed",
-                        "message": "You're not a customer. Try the logging in as a service provider",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
 
 
 class ServiceProviderEmailLogin(APIView):
@@ -586,25 +538,18 @@ class ServiceProviderEmailLogin(APIView):
         """This endpoint logs services in with their email and password.
         """
         if "email" not in request.data.keys() or "password" not in request.data.keys():
-            return Response(
-                {
-                    "status_code": 400,
-                    "status": "Failed",
-                    "message": "Please enter your email address and password.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("Please enter your email address and password.", 400, "Failed")
         else:
-            user = get_object_or_404(User, email=request.data["email"])
+            try:
+                user = User.objects.get(email=request.data["email"])
+            except User.DoesNotExist:
+                return api_response("Invalid login details", 400, "Failed")
             if user.role == "service_provider":
                 response = AuthUtil.create_token(
                     email=request.data["email"], password=request.data["password"]
                 )
                 if "error" in response.keys():
-                    return Response(
-                        {"status_code": 400, "status": "Failed", "message": response},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    return api_response(response["error"], 400, "Failed")
                 else:
                     return api_response(
                         status_code=200,
@@ -613,14 +558,7 @@ class ServiceProviderEmailLogin(APIView):
                         status="Success",
                     )
             else:
-                return Response(
-                    {
-                        "status_code": 400,
-                        "status": "Failed",
-                        "message": "You're not a service_provider. Try the logging in as a customer",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
 class ServiceProviderPhoneLogin(APIView):
     serializer_class = PhoneLoginSerializer
 
@@ -629,25 +567,18 @@ class ServiceProviderPhoneLogin(APIView):
         This endpoint logs services in with their phone number and password.
         """
         if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
-            return Response(
-                {
-                    "status_code": 400,
-                    "status": "Failed",
-                    "message": "Please enter your phone_number and password.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("Please enter your phone number and password.", 400, "Failed")
         else:
-            user = get_object_or_404(User, phone_number=request.data["phone_number"])
+            try:
+                user = User.objects.get(phone_number=request.data["phone_number"])
+            except User.DoesNotExist:
+                return api_response("Invalid login details", 400, "Failed")
             if user.role == "service_provider":
                 response = AuthUtil.create_token(
                     phone_number=request.data["phone_number"], password=request.data["password"]
                 )
                 if "error" in response.keys():
-                    return Response(
-                        {"status_code": 400, "status": "Failed", "message": response},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    return api_response(response["error"], 400, "Failed")
                 else:
                     return api_response(
                         status_code=200,
@@ -656,14 +587,7 @@ class ServiceProviderPhoneLogin(APIView):
                         status="Success",
                     )
             else:
-                return Response(
-                    {
-                        "status_code": 400,
-                        "status": "Failed",
-                        "message": "You're not a service_provider. Try the logging in as a customer",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
 
 
 class RefreshToken(APIView):
@@ -731,24 +655,12 @@ class ChangePassword(APIView):
                     user = User.objects.get(email=email)
                     user.set_password(password)
                     user.save()
-                    return Response(
-                        {"message": "Password changed successfully"},
-                        status=status.HTTP_202_ACCEPTED,
-                    )
+                    return api_response("Password changed successfully", 202, "Success")
                 else:
-                    return Response(
-                        {"password": "passwords do not match"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-            return Response(
-                {"password": password_validity["message"]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                    return api_response("Passwords do not match", 400, "Failed")
+            return api_response(password_validity["message"], 400, "Failed")
         else:
-            return Response(
-                {"old password": "Incorrect password"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("Incorrect password", 400, "Failed")
 
 
 class ResetPasswordEmail(APIView):
@@ -767,31 +679,21 @@ class ResetPasswordEmail(APIView):
             current_site = request.get_host()
             absolute_url = f"{HTTP}{current_site}{relative_link}"
 
-            email_body = f"""
-                        <h2>Hi, <small>{user.first_name}</small></h2>    
-                        <h4>Use the link below to verify your email.</h4>
-                        <p>{absolute_url}</p>
-                        
-                        """
+            email_body = f"""Hi, {(user.first_name).title}\n\nUse the link below to verify your email.\n{absolute_url}"""
             data = {
-                "email_subject": "Verify your email",
-                "email_body": email_body,
-                "to_email": user.email,
+                "subject": "Verify your email",
+                "message": email_body,
+                "recipients": [user.email],
             }
 
-            AuthUtil.sending_email(data)
+            sent = AuthUtil.gmail_send_email(data)
 
-            return Response(
-                {
-                    "message": "Password Reset email sent",
-                    "Reset password link": absolute_url,
-                },
-                status=status.HTTP_200_OK,
-            )
+            if sent:
+                return api_response("Password Reset email sent", 200, "Success")
+            else:
+                return api_response("An error occured", 400, "Failed")
         else:
-            return Response(
-                {"message": "Invalid user email"}, status=status.HTTP_406_NOT_ACCEPTABLE
-            )
+            return api_response("Invalid user email", 406, "Failed")
 
 
 class ResetPassword(APIView):
@@ -814,22 +716,13 @@ class ResetPassword(APIView):
                     user.set_password(password)
                     user.save()
 
-                    return Response(
-                        {"message": "Password reset successful"},
-                        status=status.HTTP_200_OK,
-                    )
+                    return api_response("Password reset successful", 200, "Success")
                 except Exception as e:
-                    return Response({"message": e}, status=status.HTTP_400_BAD_REQUEST)
+                    return api_response(str(e), 400, "Failed")
             else:
-                return Response(
-                    {"password": "Passwords do not match"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return api_response("Passwords do not match", 400, "Failed")
         else:
-            return Response(
-                {"password": password_validity["message"]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response(password_validity["message"], 400, "Failed")
 
 
 class GoogleLogin(SocialLoginView):
@@ -860,9 +753,9 @@ class TestImageUploadView(APIView):
         serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return api_response("Test successful", 200, "Success", serializer.data)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response("Test failed", 400, "Failed", serializer.errors)
 
 class ServiceProviderGalleryUpload(APIView):
     queryset = User.objects.all()
@@ -883,13 +776,13 @@ class ServiceProviderGalleryUpload(APIView):
         data = {
             "gallery": [incoming["image1"],incoming["image2"],incoming["image3"],incoming["image4"],incoming["image5"],]
         }
-
-        serializer = self.serializer_class(service_provider, data=data)
+        upload = update_service_provider((self.serializer_class(service_provider)).data, data)
+        serializer = self.serializer_class(service_provider, data=upload)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+            return api_response("Gallery updated", 202, "Success", serializer.data)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response("Gallery not updated", 400, "Failed", serializer.errors)
 
 class ServiceProviderDocumentUpload(APIView):
     queryset = User.objects.all()
@@ -906,13 +799,14 @@ class ServiceProviderDocumentUpload(APIView):
         incoming["card_back"] = (UploadUtil.upload_document_image(incoming["card_back"], "card_back", business_name=service_provider.business_name))["image_url"]
         incoming["pob"] = (UploadUtil.upload_document_image(incoming["pob"], "pob", business_name=service_provider.business_name))["image_url"]
         
+        upload = update_service_provider((self.serializer_class(service_provider)).data, incoming)
 
-        serializer = self.serializer_class(service_provider, data=incoming)
+        serializer = self.serializer_class(service_provider, data=upload)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+            return api_response("Document uploaded", 202, "Success", serializer.data)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return api_response("Document not uploaded", 400, "Failed", serializer.errors)
 
 class ResendVerification(APIView):
     pass
