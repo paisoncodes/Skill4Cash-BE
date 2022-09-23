@@ -39,8 +39,8 @@ class User(AbstractUser):
     # service provider information
     business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
     service_category = models.ForeignKey("Category", on_delete=models.CASCADE, null = True, blank=True)
-    keywords = ArrayField(models.CharField(max_length=225, blank=True, null=True), default=list)
-    gallery = ArrayField(models.URLField(blank=True, null=True), default=list)
+    keywords = ArrayField(models.CharField(max_length=225), default=list, blank=True, null=True)
+    gallery = ArrayField(models.URLField(), default=list, blank=True, null=True)
     card_front = models.URLField(default="")
     card_back = models.URLField(default="")
     pob = models.URLField(verbose_name="Proof of Business", default="")
