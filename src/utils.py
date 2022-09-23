@@ -286,8 +286,8 @@ class UploadUtil:
     @staticmethod
     def upload_gallery_image(image:str, business_name:str="skill4cash_business_user", image_index:int=0) -> bool:
         try:
-            uploader.upload(image, public_id = f"{business_name}-{image_index}", unique_filename = False, overwrite=True, folder="gallery")
-            srcURL = CloudinaryImage(f"gallery/{business_name}-{image_index}").build_url()
+            uploader.upload(image, public_id = f"{image_index}", unique_filename = False, overwrite=True, folder=f"gallery/{business_name}")
+            srcURL = CloudinaryImage(f"gallery/{business_name}/{image_index}").build_url()
             return {
                 "success": True,
                 "message": "Upload successful",
@@ -303,8 +303,8 @@ class UploadUtil:
     @staticmethod
     def upload_document_image(document:str, document_name:str, business_name:str="skill4cash_business_document") -> bool:
         try:
-            uploader.upload(document, public_id = f"{business_name}-{document_name}", unique_filename = False, overwrite=True, folder="document")
-            srcURL = CloudinaryImage(f"document/{business_name}-{document_name}").build_url()
+            uploader.upload(document, public_id = f"{document_name}", unique_filename = False, overwrite=True, folder=f"document/{business_name}")
+            srcURL = CloudinaryImage(f"document/{business_name}/{document_name}").build_url()
             return {
                 "success": True,
                 "message": "Upload successful",

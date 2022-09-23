@@ -795,9 +795,12 @@ class ServiceProviderDocumentUpload(APIView):
         """
         service_provider = User.objects.get(email=request.user.email)
         incoming = request.data
-        incoming["card_front"] = (UploadUtil.upload_document_image(incoming["card_front"], "card_front", business_name=service_provider.business_name))["image_url"]
-        incoming["card_back"] = (UploadUtil.upload_document_image(incoming["card_back"], "card_back", business_name=service_provider.business_name))["image_url"]
-        incoming["pob"] = (UploadUtil.upload_document_image(incoming["pob"], "pob", business_name=service_provider.business_name))["image_url"]
+        if "card_front" in incoming.keys():
+            incoming["card_front"] = (UploadUtil.upload_document_image(incoming["card_front"], "card_front", business_name=service_provider.business_name))["image_url"]
+        if "card_back" in incoming.keys():
+            incoming["card_back"] = (UploadUtil.upload_document_image(incoming["card_back"], "card_back", business_name=service_provider.business_name))["image_url"]
+        if "pob" in incoming.keys():
+            incoming["pob"] = (UploadUtil.upload_document_image(incoming["pob"], "pob", business_name=service_provider.business_name))["image_url"]
         
         upload = update_service_provider((self.serializer_class(service_provider)).data, incoming)
 
