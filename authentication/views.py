@@ -727,11 +727,28 @@ class ServiceProviderGalleryUpload(APIView):
         """
         service_provider = User.objects.get(email=request.user.email)
         incoming = request.data
-        incoming["image1"] = (UploadUtil.upload_gallery_image(incoming["image1"], business_name=service_provider.business_name, image_index=1))["image_url"]
-        incoming["image2"] = (UploadUtil.upload_gallery_image(incoming["image2"], business_name=service_provider.business_name, image_index=2))["image_url"]
-        incoming["image3"] = (UploadUtil.upload_gallery_image(incoming["image3"], business_name=service_provider.business_name, image_index=3))["image_url"]
-        incoming["image4"] = (UploadUtil.upload_gallery_image(incoming["image4"], business_name=service_provider.business_name, image_index=4))["image_url"]
-        incoming["image5"] = (UploadUtil.upload_gallery_image(incoming["image5"], business_name=service_provider.business_name, image_index=5))["image_url"]
+        
+        if "image1" in request.data.keys():
+            incoming["image1"] = (UploadUtil.upload_gallery_image(incoming["image1"], business_name=service_provider.business_name, image_index=1))["image_url"]
+        else:
+            incoming["image1"] = service_provider.gallery[0]
+        if "image2" in request.data.keys():
+            incoming["image2"] = (UploadUtil.upload_gallery_image(incoming["image2"], business_name=service_provider.business_name, image_index=2))["image_url"]
+        else:
+            incoming["image2"] = service_provider.gallery[1]
+        if "image3" in request.data.keys():
+            incoming["image3"] = (UploadUtil.upload_gallery_image(incoming["image3"], business_name=service_provider.business_name, image_index=3))["image_url"]
+        else:
+            incoming["image3"] = service_provider.gallery[2]
+        if "image4" in request.data.keys():
+            incoming["image4"] = (UploadUtil.upload_gallery_image(incoming["image4"], business_name=service_provider.business_name, image_index=4))["image_url"]
+        else:
+            incoming["image4"] = service_provider.gallery[3]
+        if "image5" in request.data.keys():
+            incoming["image5"] = (UploadUtil.upload_gallery_image(incoming["image5"], business_name=service_provider.business_name, image_index=5))["image_url"]
+        else:
+            incoming["image5"] = service_provider.gallery[4]
+        
         data = {
             "gallery": [incoming["image1"],incoming["image2"],incoming["image3"],incoming["image4"],incoming["image5"],]
         }
