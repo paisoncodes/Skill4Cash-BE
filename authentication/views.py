@@ -516,7 +516,7 @@ class CustomerPhoneLogin(APIView):
                 return api_response("Invalid login details", 400, "Failed")
             if user.role == "customer":
                 response = AuthUtil.create_token(
-                    phone_number=request.data["phone_number"], password=request.data["password"]
+                    user.email, request.data["password"]
                 )
                 if "error" in response.keys():
                     return api_response(response["error"], 400, "Failed")
@@ -572,10 +572,10 @@ class ServiceProviderPhoneLogin(APIView):
             try:
                 user = User.objects.get(phone_number=request.data["phone_number"])
             except User.DoesNotExist:
-                return api_response("Invalid login details", 400, "Failed")
+                return api_response("Invalid login", 400, "Failed")
             if user.role == "service_provider":
                 response = AuthUtil.create_token(
-                    phone_number=request.data["phone_number"], password=request.data["password"]
+                    user.email, request.data["password"]
                 )
                 if "error" in response.keys():
                     return api_response(response["error"], 400, "Failed")

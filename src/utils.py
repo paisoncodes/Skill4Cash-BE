@@ -148,36 +148,19 @@ class AuthUtil:
             return {"status": False, "message": "Enter Valid E-mail"}
     
     @staticmethod
-    def create_token(password:str, email:str = None, phone_number:str = None) -> dict:
-        if email:
-            user = authenticate(email=email, password=password)
-            if user:
-                refresh = RefreshToken.for_user(user)
-                return {
-                    'access': str(refresh.access_token),
-                    'refresh': str(refresh)
-                }
-            else:
-                return {
-                    "error": "Invalid login details"
-                }
-        elif phone_number:
-            user = authenticate(phone_number=phone_number, password=password)
-            if user:
-                refresh = RefreshToken.for_user(user)
-                return {
-                    'access': str(refresh.access_token),
-                    'refresh': str(refresh)
-                }
-            else:
-                return {
-                    "error": "Invalid login details"
-                }
+    def create_token(email:str, password:str) -> dict:
+        user = authenticate(email=email, password=password)
+        if user:
+            refresh = RefreshToken.for_user(user)
+            return {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }
         else:
             return {
                 "error": "Invalid login details"
             }
-            
+       
     @staticmethod
     def refresh_token(refresh:str) -> dict:
         try:
