@@ -5,9 +5,8 @@ from .views import (
     CustomerRetrieveUpdateDelete,
     DecodeToken,
     ServiceProviderDocumentUpload,
-    ServiceProviderEmailLogin,
+    ServiceProviderLogin,
     ServiceProviderGalleryUpload,
-    ServiceProviderPhoneLogin,
     ServiceProviderRegister,
     ServiceProviderRetrieveUpdateDelete,
     TestImageUploadView,
@@ -19,11 +18,9 @@ from .views import (
     ChangePassword,
     ResetPassword,
     ResetPasswordEmail,
-    CustomerEmailLogin,
-    CustomerPhoneLogin,
+    CustomerLogin,
     RefreshToken,
 )
-
 
 urlpatterns = [
     path("auth/customers/", CustomerRegisterGetAll.as_view()),
@@ -33,10 +30,8 @@ urlpatterns = [
     path("auth/otp/", GetOTP.as_view(), name='GetOTP'),
     path("auth/update-phone/", UpdatePhone.as_view(), name="UpdatePhone"),
     path("auth/verify-phone/", VerifyPhone.as_view(), name="VerifyPhone"),
-    path("auth/customer/login/email/", CustomerEmailLogin.as_view()),
-    path("auth/customer/login/phone/", CustomerPhoneLogin.as_view()),
-    path("auth/service-provider/login/email/", ServiceProviderEmailLogin.as_view()),
-    path("auth/service-provider/login/phone/", ServiceProviderPhoneLogin.as_view()),
+    path("auth/customer/login/", CustomerLogin.as_view()),
+    path("auth/service-provider/login/", ServiceProviderLogin.as_view()),
     path("auth/login/refresh/", RefreshToken.as_view()),
     path("auth/login/google/", GoogleLogin.as_view()),
     path("auth/verify-email/", VerifyEmail.as_view(), name="verify_email"),

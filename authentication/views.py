@@ -468,126 +468,85 @@ class UpdatePhone(APIView):
         )
 
 
-class CustomerEmailLogin(APIView):
+class CustomerLogin(APIView):
     serializer_class = EmailLoginSerializer
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         """
-        This endpoint logs customers in with their email and password.
+        This endpoint logs customers in with their email/phone number and password.
         """
-        if "email" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your email and password.", 400, "Failed")
+        if ("email" in request.data.keys() and "password" in request.data.keys()) or ("phone_number" in request.data.keys() and "password" in request.data.keys()):
+            pass
         else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if "email" in request.data.keys():
             try:
                 user = User.objects.get(email=request.data["email"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "customer":
-                response = AuthUtil.create_token(
-                    email=request.data["email"], password=request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
-            else:
-                return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
-
-class CustomerPhoneLogin(APIView):
-    serializer_class = PhoneLoginSerializer
-
-    @swagger_auto_schema(request_body=serializer_class)
-    def post(self, request):
-        """
-        This endpoint logs customers in with their phone number and password.
-        """
-        if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your phone number and password.", 400, "Failed")
-        else:
+        elif "phone_number" in request.data.keys():
             try:
                 user = User.objects.get(phone_number=request.data["phone_number"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "customer":
-                response = AuthUtil.create_token(
-                    user.email, request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
+        else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if user.role == "customer":
+            response = AuthUtil.create_token(
+                email=user.email, password=request.data["password"]
+            )
+            if "error" in response.keys():
+                return api_response(response["error"], 400, "Failed")
             else:
-                return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
+                return api_response(
+                    status_code=200,
+                    message="Login successful",
+                    data=response,
+                    status="Success",
+                )
+        else:
+            return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
 
-
-class ServiceProviderEmailLogin(APIView):
+class ServiceProviderLogin(APIView):
     serializer_class = EmailLoginSerializer
 
     def post(self, request):
-        """This endpoint logs services in with their email and password.
+        """This endpoint logs services in with their email/phone number and password.
         """
-        if "email" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your email address and password.", 400, "Failed")
+        if ("email" in request.data.keys() and "password" in request.data.keys()) or ("phone_number" in request.data.keys() and "password" in request.data.keys()):
+            pass
         else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if "email" in request.data.keys():
+            print("email")
             try:
                 user = User.objects.get(email=request.data["email"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "service_provider":
-                response = AuthUtil.create_token(
-                    email=request.data["email"], password=request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
-            else:
-                return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
-class ServiceProviderPhoneLogin(APIView):
-    serializer_class = PhoneLoginSerializer
-
-    def post(self, request):
-        """
-        This endpoint logs services in with their phone number and password.
-        """
-        if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your phone number and password.", 400, "Failed")
-        else:
+        elif "phone_number" in request.data.keys():
+            print("phone")
             try:
                 user = User.objects.get(phone_number=request.data["phone_number"])
             except User.DoesNotExist:
-                return api_response("Invalid login", 400, "Failed")
-            if user.role == "service_provider":
-                response = AuthUtil.create_token(
-                    user.email, request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
+                return api_response("Invalid login details", 400, "Failed")
+        else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if user.role == "service_provider":
+            response = AuthUtil.create_token(
+                email=user.email, password=request.data["password"]
+            )
+            if "error" in response.keys():
+                return api_response(response["error"], 400, "Failed")
             else:
-                return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
+                return api_response(
+                    status_code=200,
+                    message="Login successful",
+                    data=response,
+                    status="Success",
+                )
+        else:
+            return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
 
 
 class RefreshToken(APIView):
