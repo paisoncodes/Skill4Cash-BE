@@ -794,6 +794,7 @@ class ServiceProviderDocumentUpload(APIView):
         This endpoints updates services' documents.
         """
         service_provider = User.objects.get(email=request.user.email)
+        print(request.data)
         incoming = request.data
         if "card_front" in incoming.keys():
             incoming["card_front"] = (UploadUtil.upload_document_image(incoming["card_front"], "card_front", business_name=service_provider.business_name))["image_url"]
