@@ -1,5 +1,7 @@
 from drf_yasg import openapi
 import jwt
+import json
+import os
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -10,13 +12,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from authentication.utility import update_customer, update_service_provider
+from services.serializers import CategorySerializer
 from src.permissions import IsOwnerOrReadOnly
-from src.settings import HTTP
+from src.settings import BASE_DIR, HTTP
 from src.utils import AuthUtil, UploadUtil, api_response
 from drf_yasg.utils import swagger_auto_schema
 from decouple import config
 
-from .models import TestImageUpload, User
+from .models import Category, TestImageUpload, User
 from .serializers import (
     CustomerRegistrationSerializer,
     CustomerSerializer,
@@ -31,6 +34,7 @@ from .serializers import (
     UserSerializer,
 )
 
+path = os.path.join(BASE_DIR, 'authentication')
 
 class CustomerRegisterGetAll(APIView):
     serializer_class = CustomerRegistrationSerializer
@@ -464,125 +468,85 @@ class UpdatePhone(APIView):
         )
 
 
-class CustomerEmailLogin(APIView):
+class CustomerLogin(APIView):
     serializer_class = EmailLoginSerializer
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         """
-        This endpoint logs customers in with their email and password.
+        This endpoint logs customers in with their email/phone number and password.
         """
-        if "email" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your email and password.", 400, "Failed")
+        if ("email" in request.data.keys() and "password" in request.data.keys()) or ("phone_number" in request.data.keys() and "password" in request.data.keys()):
+            pass
         else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if "email" in request.data.keys():
             try:
                 user = User.objects.get(email=request.data["email"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "customer":
-                response = AuthUtil.create_token(
-                    email=request.data["email"], password=request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
-            else:
-                return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
-
-class CustomerPhoneLogin(APIView):
-    serializer_class = PhoneLoginSerializer
-
-    @swagger_auto_schema(request_body=serializer_class)
-    def post(self, request):
-        """
-        This endpoint logs customers in with their phone number and password.
-        """
-        if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your phone number and password.", 400, "Failed")
-        else:
+        elif "phone_number" in request.data.keys():
             try:
                 user = User.objects.get(phone_number=request.data["phone_number"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "customer":
-                response = AuthUtil.create_token(
-                    phone_number=request.data["phone_number"], password=request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
+        else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if user.role == "customer":
+            response = AuthUtil.create_token(
+                email=user.email, password=request.data["password"]
+            )
+            if "error" in response.keys():
+                return api_response(response["error"], 400, "Failed")
             else:
-                return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
+                return api_response(
+                    status_code=200,
+                    message="Login successful",
+                    data=response,
+                    status="Success",
+                )
+        else:
+            return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
 
-class ServiceProviderEmailLogin(APIView):
+class ServiceProviderLogin(APIView):
     serializer_class = EmailLoginSerializer
 
     def post(self, request):
-        """This endpoint logs services in with their email and password.
+        """This endpoint logs services in with their email/phone number and password.
         """
-        if "email" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your email address and password.", 400, "Failed")
+        if ("email" in request.data.keys() and "password" in request.data.keys()) or ("phone_number" in request.data.keys() and "password" in request.data.keys()):
+            pass
         else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if "email" in request.data.keys():
+            print("email")
             try:
                 user = User.objects.get(email=request.data["email"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "service_provider":
-                response = AuthUtil.create_token(
-                    email=request.data["email"], password=request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
-            else:
-                return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
-class ServiceProviderPhoneLogin(APIView):
-    serializer_class = PhoneLoginSerializer
-
-    def post(self, request):
-        """
-        This endpoint logs services in with their phone number and password.
-        """
-        if "phone_number" not in request.data.keys() or "password" not in request.data.keys():
-            return api_response("Please enter your phone number and password.", 400, "Failed")
-        else:
+        elif "phone_number" in request.data.keys():
+            print("phone")
             try:
                 user = User.objects.get(phone_number=request.data["phone_number"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
-            if user.role == "service_provider":
-                response = AuthUtil.create_token(
-                    phone_number=request.data["phone_number"], password=request.data["password"]
-                )
-                if "error" in response.keys():
-                    return api_response(response["error"], 400, "Failed")
-                else:
-                    return api_response(
-                        status_code=200,
-                        message="Login successful",
-                        data=response,
-                        status="Success",
-                    )
+        else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if user.role == "service_provider":
+            response = AuthUtil.create_token(
+                email=user.email, password=request.data["password"]
+            )
+            if "error" in response.keys():
+                return api_response(response["error"], 400, "Failed")
             else:
-                return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
+                return api_response(
+                    status_code=200,
+                    message="Login successful",
+                    data=response,
+                    status="Success",
+                )
+        else:
+            return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
 
 
 class RefreshToken(APIView):
@@ -757,11 +721,28 @@ class ServiceProviderGalleryUpload(APIView):
         """
         service_provider = User.objects.get(email=request.user.email)
         incoming = request.data
-        incoming["image1"] = (UploadUtil.upload_gallery_image(incoming["image1"], business_name=service_provider.business_name, image_index=1))["image_url"]
-        incoming["image2"] = (UploadUtil.upload_gallery_image(incoming["image2"], business_name=service_provider.business_name, image_index=2))["image_url"]
-        incoming["image3"] = (UploadUtil.upload_gallery_image(incoming["image3"], business_name=service_provider.business_name, image_index=3))["image_url"]
-        incoming["image4"] = (UploadUtil.upload_gallery_image(incoming["image4"], business_name=service_provider.business_name, image_index=4))["image_url"]
-        incoming["image5"] = (UploadUtil.upload_gallery_image(incoming["image5"], business_name=service_provider.business_name, image_index=5))["image_url"]
+        
+        if "image1" in request.data.keys():
+            incoming["image1"] = (UploadUtil.upload_gallery_image(incoming["image1"], business_name=service_provider.business_name, image_index=1))["image_url"]
+        else:
+            incoming["image1"] = service_provider.gallery[0]
+        if "image2" in request.data.keys():
+            incoming["image2"] = (UploadUtil.upload_gallery_image(incoming["image2"], business_name=service_provider.business_name, image_index=2))["image_url"]
+        else:
+            incoming["image2"] = service_provider.gallery[1]
+        if "image3" in request.data.keys():
+            incoming["image3"] = (UploadUtil.upload_gallery_image(incoming["image3"], business_name=service_provider.business_name, image_index=3))["image_url"]
+        else:
+            incoming["image3"] = service_provider.gallery[2]
+        if "image4" in request.data.keys():
+            incoming["image4"] = (UploadUtil.upload_gallery_image(incoming["image4"], business_name=service_provider.business_name, image_index=4))["image_url"]
+        else:
+            incoming["image4"] = service_provider.gallery[3]
+        if "image5" in request.data.keys():
+            incoming["image5"] = (UploadUtil.upload_gallery_image(incoming["image5"], business_name=service_provider.business_name, image_index=5))["image_url"]
+        else:
+            incoming["image5"] = service_provider.gallery[4]
+        
         data = {
             "gallery": [incoming["image1"],incoming["image2"],incoming["image3"],incoming["image4"],incoming["image5"],]
         }
@@ -783,10 +764,14 @@ class ServiceProviderDocumentUpload(APIView):
         This endpoints updates services' documents.
         """
         service_provider = User.objects.get(email=request.user.email)
+        print(request.data)
         incoming = request.data
-        incoming["card_front"] = (UploadUtil.upload_document_image(incoming["card_front"], "card_front", business_name=service_provider.business_name))["image_url"]
-        incoming["card_back"] = (UploadUtil.upload_document_image(incoming["card_back"], "card_back", business_name=service_provider.business_name))["image_url"]
-        incoming["pob"] = (UploadUtil.upload_document_image(incoming["pob"], "pob", business_name=service_provider.business_name))["image_url"]
+        if "card_front" in incoming.keys():
+            incoming["card_front"] = (UploadUtil.upload_document_image(incoming["card_front"], "card_front", business_name=service_provider.business_name))["image_url"]
+        if "card_back" in incoming.keys():
+            incoming["card_back"] = (UploadUtil.upload_document_image(incoming["card_back"], "card_back", business_name=service_provider.business_name))["image_url"]
+        if "pob" in incoming.keys():
+            incoming["pob"] = (UploadUtil.upload_document_image(incoming["pob"], "pob", business_name=service_provider.business_name))["image_url"]
         
         upload = update_service_provider((self.serializer_class(service_provider)).data, incoming)
 
@@ -799,3 +784,21 @@ class ServiceProviderDocumentUpload(APIView):
 
 class ResendVerification(APIView):
     pass
+
+class PopulateCategory(APIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    def get(self, request):
+        with open(f"{path}/categories.json") as file:
+            categories = json.load(file)
+        for key in categories.keys():
+            category_name = "-".join(key.split("_"))
+            name = " ".join(key.split("_"))
+            image_url = (UploadUtil.upload_category_image(f"{path}/{categories[key]}", category_name))["image_url"]
+            if Category.objects.filter(name=name).exists():
+                continue
+            else:
+                Category.objects.create(name=name, image=image_url)
+        serializer = self.serializer_class(Category.objects.all(), many=True)
+        return api_response("Categories uploaded successfully", 201, "Success", serializer.data)
+

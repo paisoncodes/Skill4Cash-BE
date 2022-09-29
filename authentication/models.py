@@ -42,11 +42,11 @@ class User(AbstractUser):
     # service provider information
     business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
     service_category = models.ForeignKey("Category", on_delete=models.CASCADE, null = True, blank=True)
-    keywords = ArrayField(models.CharField(max_length=225), default=list)
-    gallery = ArrayField(models.URLField(), default=list)
-    card_front = models.URLField(default="")
-    card_back = models.URLField(default="")
-    pob = models.URLField(verbose_name="Proof of Business", default="")
+    keywords = ArrayField(models.CharField(max_length=225), default=list, blank=True, null=True)
+    gallery = ArrayField(models.URLField(), default=list, blank=True, null=True)
+    card_front = models.URLField(default=str, blank=True, null=True)
+    card_back = models.URLField(default=str, blank=True, null=True)
+    pob = models.URLField(verbose_name="Proof of Business", default=str, blank=True, null=True)
     is_verified_business = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
@@ -77,6 +77,7 @@ class Category(models.Model):
         primary_key=True, unique=True, editable=False, default=uuid.uuid4
     )
     name = models.CharField(max_length=225, unique=True)
+    image = models.URLField(default="https://res.cloudinary.com/skill4cash/image/upload/v1/profile/default")
 
     class Meta:
         verbose_name_plural = "Categories"

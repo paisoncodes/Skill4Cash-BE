@@ -148,21 +148,9 @@ class AuthUtil:
             return {"status": False, "message": "Enter Valid E-mail"}
     
     @staticmethod
-    def create_token(password:str, email:str = None, phone_number:str = None) -> dict:
-        if email:
-            user = authenticate(email=email, password=password)
-            if user:
-                refresh = RefreshToken.for_user(user)
-                return {
-                    'access': str(refresh.access_token),
-                    'refresh': str(refresh)
-                }
-            else:
-                return {
-                    "error": "Invalid login details"
-                }
-        elif phone_number:
-            user = authenticate(phone_number=phone_number, password=password)
+    def create_token(email:str, password:str) -> dict:
+        user = authenticate(email=email, password=password)
+        if user.is_verified:
             if user:
                 refresh = RefreshToken.for_user(user)
                 return {
@@ -175,9 +163,9 @@ class AuthUtil:
                 }
         else:
             return {
-                "error": "Invalid login details"
+                "error": "User not verified"
             }
-            
+       
     @staticmethod
     def refresh_token(refresh:str) -> dict:
         try:
@@ -284,10 +272,10 @@ class UploadUtil:
                 "image_url": ""
             }
     @staticmethod
-    def upload_gallery_image(image:str, business_name:str="skill4cash_business_user", image_index:int=0) -> bool:
+    def upload_gallery_image(image:str, business_name:str="skill4cash_business_user", image_index:int=0) -> dict:
         try:
-            uploader.upload(image, public_id = f"{business_name}-{image_index}", unique_filename = False, overwrite=True, folder="gallery")
-            srcURL = CloudinaryImage(f"gallery/{business_name}-{image_index}").build_url()
+            uploader.upload(image, public_id = f"{image_index}", unique_filename = False, overwrite=True, folder=f"gallery/{business_name}")
+            srcURL = CloudinaryImage(f"gallery/{business_name}/{image_index}").build_url()
             return {
                 "success": True,
                 "message": "Upload successful",
@@ -301,10 +289,10 @@ class UploadUtil:
             }
 
     @staticmethod
-    def upload_document_image(document:str, document_name:str, business_name:str="skill4cash_business_document") -> bool:
+    def upload_document_image(document:str, document_name:str, business_name:str="skill4cash_business_document") -> dict:
         try:
-            uploader.upload(document, public_id = f"{business_name}-{document_name}", unique_filename = False, overwrite=True, folder="document")
-            srcURL = CloudinaryImage(f"document/{business_name}-{document_name}").build_url()
+            uploader.upload(document, public_id = f"{document_name}", unique_filename = False, overwrite=True, folder=f"document/{business_name}")
+            srcURL = CloudinaryImage(f"document/{business_name}/{document_name}").build_url()
             return {
                 "success": True,
                 "message": "Upload successful",
@@ -316,6 +304,24 @@ class UploadUtil:
                 "message": str(e),
                 "image_url": ""
             }
+    
+    @staticmethod
+    def upload_category_image(category_image:str, category_name:str) -> dict:
+        try:
+            uploader.upload(category_image, public_id = f"{category_name}", unique_filename = False, overwrite=True, folder=f"category")
+            srcURL = CloudinaryImage(f"document/{category_name}").build_url()
+            return {
+                "success": True,
+                "message": "Upload successful",
+                "image_url": srcURL
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e),
+                "image_url": ""
+            }
+    
 
 def api_response(message: "str", status_code: "int", status: "str", data: "Any" = []) -> Response:
 
