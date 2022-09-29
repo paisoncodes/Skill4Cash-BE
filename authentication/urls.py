@@ -4,6 +4,7 @@ from .views import (
     CustomerRegisterGetAll,
     CustomerRetrieveUpdateDelete,
     DecodeToken,
+    PopulateCategory,
     ServiceProviderDocumentUpload,
     ServiceProviderLogin,
     ServiceProviderGalleryUpload,
@@ -42,4 +43,5 @@ urlpatterns = [
     path("auth/test-upload/", TestImageUploadView.as_view()),
     path("auth/service-provider-gallery-update/", ServiceProviderGalleryUpload.as_view()),
     path("auth/service-provider-document-update/", ServiceProviderDocumentUpload.as_view()),
+    path("util/category-upload/", PopulateCategory.as_view()),
 ]

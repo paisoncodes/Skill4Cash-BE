@@ -1,5 +1,7 @@
 from drf_yasg import openapi
 import jwt
+import json
+import os
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
@@ -13,13 +15,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from authentication.utility import update_customer, update_service_provider
+from services.serializers import CategorySerializer
 from src.permissions import IsOwnerOrReadOnly
-from src.settings import HTTP
+from src.settings import BASE_DIR, HTTP
 from src.utils import AuthUtil, UploadUtil, api_response
 from drf_yasg.utils import swagger_auto_schema
 from decouple import config
 
-from .models import TestImageUpload, User
+from .models import Category, TestImageUpload, User
 from .serializers import (
     CustomerRegistrationSerializer,
     CustomerSerializer,
@@ -34,6 +37,7 @@ from .serializers import (
     UserSerializer,
 )
 
+path = os.path.join(BASE_DIR, 'authentication')
 
 class CustomerRegisterGetAll(APIView):
     serializer_class = CustomerRegistrationSerializer
@@ -790,3 +794,21 @@ class ServiceProviderDocumentUpload(APIView):
 
 class ResendVerification(APIView):
     pass
+
+class PopulateCategory(APIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    def get(self, request):
+        with open(f"{path}/categories.json") as file:
+            categories = json.load(file)
+        for key in categories.keys():
+            category_name = "-".join(key.split("_"))
+            name = " ".join(key.split("_"))
+            image_url = (UploadUtil.upload_category_image(f"{path}/{categories[key]}", category_name))["image_url"]
+            if Category.objects.filter(name=name).exists():
+                continue
+            else:
+                Category.objects.create(name=name, image=image_url)
+        serializer = self.serializer_class(Category.objects.all(), many=True)
+        return api_response("Categories uploaded successfully", 201, "Success", serializer.data)
+

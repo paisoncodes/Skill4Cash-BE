@@ -74,6 +74,7 @@ class Category(models.Model):
         primary_key=True, unique=True, editable=False, default=uuid.uuid4
     )
     name = models.CharField(max_length=225, unique=True)
+    image = models.URLField(default="https://res.cloudinary.com/skill4cash/image/upload/v1/profile/default")
 
     class Meta:
         verbose_name_plural = "Categories"

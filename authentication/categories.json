@@ -1,0 +1,14 @@
+{
+    "Building_Construction": "S4CService/Building_Construction.png",
+    "Catering": "S4CService/Catering.png",
+    "Electrical": "S4CService/Electrical.png",
+    "Fashion_Designer": "S4CService/Fashion_Designer.png",
+    "Graphics_Designer": "S4CService/Graphics_Designer.png",
+    "Painting": "S4CService/Painting.png",
+    "Plumbing_and_Pipe_Fixing": "S4CService/Plumbing_and_Pipe_Fixing.png",
+    "Printing": "S4CService/Printing.png",
+    "Product_Design": "S4CService/Product_Design.png",
+    "Vehicle_Mechanic": "S4CService/Vehicle_Mechanic.png",
+    "Website_Development": "S4CService/Website_Development.png",
+    "Wellness_and_Health":  "S4CService/Wellness_and_Health.png"
+}
