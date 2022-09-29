@@ -3,9 +3,6 @@ import jwt
 import json
 import os
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.shortcuts import get_list_or_404, get_object_or_404
@@ -140,7 +137,6 @@ class CustomerRetrieveUpdateDelete(APIView):
         customer = User.objects.get(email=request.user.email)
         data = request.data
         if "profile_picture" in data.keys():
-            print("here")
             data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = customer.email))["image_url"]
         upload = update_customer((self.serializer_class(customer)).data, data)
         serializer = CustomerSerializer(instance=customer, data=upload)
@@ -686,12 +682,6 @@ class ResetPassword(APIView):
                 return api_response("Passwords do not match", 400, "Failed")
         else:
             return api_response(password_validity["message"], 400, "Failed")
-
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-
 
 class DecodeToken(APIView):
     def post(self, request):

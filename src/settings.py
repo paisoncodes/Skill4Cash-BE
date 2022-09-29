@@ -49,16 +49,13 @@ INSTALLED_APPS = [
     "phonenumber_field",
     "rest_framework",
     "rest_framework_simplejwt",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
     "drf_yasg",
     "dj_rest_auth",
     "rest_framework.authtoken",
     "corsheaders",
     "authentication.apps.AuthConfig",
     "services",
+    'social_auth',
     # "chat",
     "cloudinary",
 ]
@@ -119,10 +116,7 @@ WSGI_APPLICATION = "src.wsgi.application"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 prod_db = dj_database_url.config(conn_max_age=500)
-
-
 HEROKU = config("HEROKU", cast=bool)
-
 if HEROKU:
     DATABASES = {"default": prod_db}
     db_from_env = dj_database_url.config(conn_max_age=0, ssl_require=False)
@@ -142,25 +136,9 @@ else:
         }
     }
 
-# Cloudinary configuration
-cloudinary.config(
-    cloud_name = config("CLOUDINARY_CLOUD_NAME"),
-    api_key = config("CLOUDINARY_API_KEY"), 
-    api_secret = config("CLOUDINARY_API_SECRET"),
-    secure = True
-)
-
-# Email configuration
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -193,21 +171,22 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
-
 PROJECT_ROOT = os.path.join(os.path.abspath(__file__))
+
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
 MEDIA_URL = "uploads/"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -232,6 +211,24 @@ SENDER = config("SENDER")
 RECIPIENT = config("RECIPIENT")
 
 HTTP = config("HTTP")
+
+# Cloudinary configuration
+cloudinary.config(
+    cloud_name = config("CLOUDINARY_CLOUD_NAME"),
+    api_key = config("CLOUDINARY_API_KEY"), 
+    api_secret = config("CLOUDINARY_API_SECRET"),
+    secure = True
+)
+
+# Email configuration
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+SOCIAL_SECRET = config('SOCIAL_SECRET')
+
 
 # CHANNEL_LAYERS = {
 #     "default": {
