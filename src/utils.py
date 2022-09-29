@@ -150,15 +150,20 @@ class AuthUtil:
     @staticmethod
     def create_token(email:str, password:str) -> dict:
         user = authenticate(email=email, password=password)
-        if user:
-            refresh = RefreshToken.for_user(user)
-            return {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            }
+        if user.is_verified:
+            if user:
+                refresh = RefreshToken.for_user(user)
+                return {
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh)
+                }
+            else:
+                return {
+                    "error": "Invalid login details"
+                }
         else:
             return {
-                "error": "Invalid login details"
+                "error": "User not verified"
             }
        
     @staticmethod
