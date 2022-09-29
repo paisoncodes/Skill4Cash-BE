@@ -64,4 +64,3 @@ def register_social_user(provider, email, first_name, last_name, username, role,
         registered_user['email'] = email
         return registered_user
 
-        # send verification code

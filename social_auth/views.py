@@ -1,9 +1,9 @@
-from django.conf import settings
 from src.utils import api_response
-from . google import Google
 from authentication.models import User
-from .register import register_social_user
+from social_auth.google import Google
+from social_auth.facebook import Facebook
 from rest_framework.generics import GenericAPIView
+from social_auth.register import register_social_user
 from rest_framework.exceptions import AuthenticationFailed
 from .serializers import GoogleSocialAuthSerializer, FacebookSocialAuthSerializer
 
@@ -54,20 +54,30 @@ class FacebookSocialAuthView(GenericAPIView):
         Send an access token as from facebook to get user information
         """
 
-        serializer = FacebookSocialAuthSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
+        
         if serializer.is_valid(raise_exception=True):
-            data = serializer.validated_data
-            # authenticate user
-            return api_response(
-                    status_code=200,
-                    message="Customer created successfully",
-                    data=data,
-                    status="Success",
-                )
-        return api_response(
-                status_code=400,
-                message=serializer.errors,
-                status="Failed",
-            )
+            validated_token = serializer.validated_data.get('access_token')
+            validated_state = serializer.validated_data.get('state')
+            validated_city = serializer.validated_data.get('city')
+            validated_role = serializer.validated_data.get('role')
 
+            user_data = Facebook.fb_validate(validated_token)
+            if user_data is None:
+                raise AuthenticationFailed('Invalid or Expired Token.')
+            
+            usn = user_data['email'].split('@')[0]
+            user_info = register_social_user(
+                            provider='facebook', email=user_data['email'],
+                            first_name=user_data['first_name'],last_name=user_data['last_name'], 
+                            username=usn, state=validated_state,
+                            city=validated_city, role=validated_role.lower())
+            
+            if User.objects.get(email=user_data['email']).role[0] == 's':
+                message = "Service Provider Successfully Created or Logged In"
+            else:
+                message = "Customer Successfully Created or Logged In"
+            return api_response(
+                    status_code=200, message=message,
+                    data=user_info, status="Success")
 
