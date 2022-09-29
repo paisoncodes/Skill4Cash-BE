@@ -15,7 +15,6 @@ from .views import (
     GetOTP,
     VerifyPhone,
     UpdatePhone,
-    GoogleLogin,
     ChangePassword,
     ResetPassword,
     ResetPasswordEmail,
@@ -24,6 +23,10 @@ from .views import (
     RefreshToken,
 )
 
+from social_auth.views import(
+    GoogleSocialAuthView,
+    FacebookSocialAuthView
+)
 
 urlpatterns = [
     path("auth/customers/", CustomerRegisterGetAll.as_view()),
@@ -38,7 +41,6 @@ urlpatterns = [
     path("auth/service-provider/login/email/", ServiceProviderEmailLogin.as_view()),
     path("auth/service-provider/login/phone/", ServiceProviderPhoneLogin.as_view()),
     path("auth/login/refresh/", RefreshToken.as_view()),
-    path("auth/login/google/", GoogleLogin.as_view()),
     path("auth/verify-email/", VerifyEmail.as_view(), name="verify_email"),
     path("auth/change-password", ChangePassword.as_view()),
     path("auth/reset-password", ResetPassword.as_view()),
@@ -47,4 +49,6 @@ urlpatterns = [
     path("auth/test-upload/", TestImageUploadView.as_view()),
     path("auth/service-provider-gallery-update/", ServiceProviderGalleryUpload.as_view()),
     path("auth/service-provider-document-update/", ServiceProviderDocumentUpload.as_view()),
+    path("auth/facebook/login/", FacebookSocialAuthView.as_view()),
+    path("auth/google/login/", GoogleSocialAuthView.as_view()),
 ]
