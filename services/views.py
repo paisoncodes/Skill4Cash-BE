@@ -1,3 +1,4 @@
+from src.utils import api_response
 from .serializers import RatingSerializer, CategorySerializer, ScheduleSerializer
 
 from .models import Rating, Schedule
@@ -70,8 +71,7 @@ class CreateReadCategory(APIView):
 
     def get(self, request):
         category_serializer = CategorySerializer(self.category, many=True)
-        category_list = [category["name"] for category in category_serializer.data]
-        return Response({"categories": category_list}, status=status.HTTP_200_OK)
+        return api_response("Categories retrieved successfully", 200, "Success", category_serializer.data)
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):

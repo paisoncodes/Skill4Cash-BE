@@ -41,9 +41,9 @@ class User(AbstractUser):
     service_category = models.ForeignKey("Category", on_delete=models.CASCADE, null = True, blank=True)
     keywords = ArrayField(models.CharField(max_length=225), default=list, blank=True, null=True)
     gallery = ArrayField(models.URLField(), default=list, blank=True, null=True)
-    card_front = models.URLField(default="")
-    card_back = models.URLField(default="")
-    pob = models.URLField(verbose_name="Proof of Business", default="")
+    card_front = models.URLField(default=str, blank=True, null=True)
+    card_back = models.URLField(default=str, blank=True, null=True)
+    pob = models.URLField(verbose_name="Proof of Business", default=str, blank=True, null=True)
     is_verified_business = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
