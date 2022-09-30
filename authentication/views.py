@@ -266,15 +266,15 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
     serializer_class = ServiceProviderSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
+    def get(self, request, id):
         """
-        This endpoint returns a single service detail. You can get the service by either their id or their name(business name).
+        This endpoint returns a single service detail. 
+        You can get the service by either their id or their name(business name).
         """
-        id = request.GET.get("state", None)
         name = request.GET.get("city", None)
         if id is not None and name is None:
             try:
-                service_provider = User.objectsget(id=id)
+                service_provider = User.objects.get(id=id)
                 serializer = ServiceProviderSerializer(service_provider)
                 return api_response("Service provider found", 200, "Success", serializer.data)
             except User.DoesNotExist:
@@ -288,10 +288,8 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
                 return api_response("Service provider not found", 404, "Failed")
         else:
             return api_response("Service provider not found", 404, "Failed")
-        
-            
-    
-    def put(self, request):
+          
+    def put(self, request, id):
         """
         This endpoint updates a service info
         """
@@ -311,11 +309,12 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         """
         This endpoint deletes a specified service from the database.
         """
-        if service_provider := self.get_object(id):
-            service_provider.delete()
-            return api_response("User deleted successfully", 204, "Success")
-        else:
+        try:
+            service_provider = User.objects.get(id=id)
+        except ObjectDoesNotExist:
             return api_response("Invalid User ID", 404, "Failed")
+        service_provider.delete()
+        return api_response("User deleted successfully", 204, "Success")
 
 
 class VerifyEmail(APIView):
