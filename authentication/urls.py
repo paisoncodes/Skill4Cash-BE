@@ -31,7 +31,7 @@ urlpatterns = [
     path("auth/customers/", CustomerRegisterGetAll.as_view()),
     path("auth/customers/<str:id>/", CustomerRetrieveUpdateDelete.as_view()),
     path("auth/service-provider/register/", ServiceProviderRegister.as_view()),
-    path("auth/service-provider/", ServiceProviderRetrieveUpdateDelete.as_view()),
+    path("auth/service-provider/<str:id>/", ServiceProviderRetrieveUpdateDelete.as_view()),
     path("auth/otp/", GetOTP.as_view(), name='GetOTP'),
     path("auth/update-phone/", UpdatePhone.as_view(), name="UpdatePhone"),
     path("auth/verify-phone/", VerifyPhone.as_view(), name="VerifyPhone"),

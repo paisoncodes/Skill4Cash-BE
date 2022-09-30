@@ -49,7 +49,9 @@ def register_social_user(provider, email, first_name, last_name, username, role,
             'auth_provider':provider,
             'state':state,
             'city':city,
-            'role': role
+            'role': role,
+            'is_verified':True,
+            'email_verification':True
         }
 
         user = User.objects.create_user(**user)
