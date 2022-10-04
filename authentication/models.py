@@ -1,13 +1,9 @@
-from email.policy import default
-from django.conf import settings
-from django.db import models
-from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
-
-from .manager import UserManager
-import uuid
 from django.contrib.postgres.fields import ArrayField
-
+from django.contrib.auth.models import AbstractUser
+from .manager import UserManager
+from django.db import models
+import uuid
 
 
 class User(AbstractUser):
@@ -16,6 +12,12 @@ class User(AbstractUser):
         ("customer", "customer"),
         ("service_provider", "service_provider"),
     )
+
+    AUTH_PROVIDERS = {
+        'facebook': 'facebook',
+        'google': 'google',
+        'email': 'email'
+    }
 
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False, unique=True
@@ -35,6 +37,7 @@ class User(AbstractUser):
     phone_verification = models.BooleanField(default=False)
     email_verification = models.BooleanField(default=False)
     profile_picture = models.URLField(default="https://res.cloudinary.com/skill4cash/image/upload/v1/profile/default")
+    auth_provider = models.CharField(max_length=255, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
     
     # service provider information
     business_name = models.CharField(max_length=200, unique=True, null=True, blank=True)
