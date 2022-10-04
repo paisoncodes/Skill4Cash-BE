@@ -281,7 +281,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
                 api_response("Service provider not found", 404, "Failed")
         elif id is None and name is not None:
             try:
-                service_provider = User.objectsget(business_name=name)
+                service_provider = User.objects.get(business_name=name)
                 serializer = ServiceProviderSerializer(service_provider)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except User.DoesNotExist:
@@ -311,7 +311,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         """
         try:
             service_provider = User.objects.get(id=id)
-        except ObjectDoesNotExist:
+        except User.DoesNotExist:
             return api_response("Invalid User ID", 404, "Failed")
         service_provider.delete()
         return api_response("User deleted successfully", 204, "Success")
@@ -339,7 +339,6 @@ class VerifyEmail(APIView):
             return api_response("Verification link expired", 400, "Failed")
         except jwt.exceptions.DecodeError:
             return api_response("Invalid token", 400, "Failed")
-
 
 class GetOTP(APIView):
     permission_classes = (IsAuthenticated,)
@@ -370,7 +369,6 @@ class GetOTP(APIView):
             message="Phone number is Invalid",
             status='Check Number'
         )
-
 
 class VerifyPhone(APIView):
     serializer_class = VerificationSerializer
@@ -415,7 +413,6 @@ class VerifyPhone(APIView):
             message="Error!",
             status='Failed'
         )
-
 
 class UpdatePhone(APIView):
     serializer_class = UpdatePhoneSerializer
@@ -465,7 +462,6 @@ class UpdatePhone(APIView):
             message="Error!",
             status='Failed'
         )
-
 
 class CustomerLogin(APIView):
     serializer_class = EmailLoginSerializer
@@ -547,7 +543,6 @@ class ServiceProviderLogin(APIView):
         else:
             return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
 
-
 class RefreshToken(APIView):
     serializer_class = TokenRefreshSerializer
 
@@ -576,7 +571,6 @@ class RefreshToken(APIView):
                     {"status_code": 200, "status": "Success", "message": response},
                     status=status.HTTP_200_OK,
                 )
-
 
 class ChangePassword(APIView):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
@@ -620,7 +614,6 @@ class ChangePassword(APIView):
         else:
             return api_response("Incorrect password", 400, "Failed")
 
-
 class ResetPasswordEmail(APIView):
     permission_classes = (AllowAny,)
 
@@ -652,7 +645,6 @@ class ResetPasswordEmail(APIView):
                 return api_response("An error occured", 400, "Failed")
         else:
             return api_response("Invalid user email", 406, "Failed")
-
 
 class ResetPassword(APIView):
     permission_classes = (AllowAny,)
