@@ -12,7 +12,7 @@ def generate_number():
     if not User.objects.filter(phone_number=num).exists():
         return num
     else:
-        return generate_username()
+        return generate_number()
 
 
 def register_social_user(provider, email, first_name, last_name, username, role, state, city):
@@ -25,8 +25,8 @@ def register_social_user(provider, email, first_name, last_name, username, role,
 
             registered_user = AuthUtil.create_token(
             						password=settings.SOCIAL_SECRET,
-            						email=email,
-            						phone_number=None)
+            						email=email
+                                )
             if not 'error' in registered_user.keys():
                 registered_user['email'] = email
                 return registered_user
