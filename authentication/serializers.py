@@ -125,6 +125,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
             "confirm_password",
             "state",
             "profile_picture",
+            "service_category",
             "city",
             "verified",
             "gallery",

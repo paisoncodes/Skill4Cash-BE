@@ -3,9 +3,7 @@ import re
 import string
 from datetime import time
 from random import choice
-import cloudinary
 from cloudinary import uploader, CloudinaryImage
-from decouple import config
 
 import jwt
 from django.conf import settings
