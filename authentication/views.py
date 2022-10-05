@@ -3,9 +3,6 @@ import jwt
 import json
 import os
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.shortcuts import get_list_or_404, get_object_or_404
@@ -140,7 +137,6 @@ class CustomerRetrieveUpdateDelete(APIView):
         customer = User.objects.get(email=request.user.email)
         data = request.data
         if "profile_picture" in data.keys():
-            print("here")
             data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = customer.email))["image_url"]
         upload = update_customer((self.serializer_class(customer)).data, data)
         serializer = CustomerSerializer(instance=customer, data=upload)
@@ -270,32 +266,30 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
     serializer_class = ServiceProviderSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
+    def get(self, request, id):
         """
-        This endpoint returns a single service detail. You can get the service by either their id or their name(business name).
+        This endpoint returns a single service detail. 
+        You can get the service by either their id or their name(business name).
         """
-        id = request.GET.get("state", None)
         name = request.GET.get("city", None)
         if id is not None and name is None:
             try:
-                service_provider = User.objectsget(id=id)
+                service_provider = User.objects.get(id=id)
                 serializer = ServiceProviderSerializer(service_provider)
                 return api_response("Service provider found", 200, "Success", serializer.data)
             except User.DoesNotExist:
                 api_response("Service provider not found", 404, "Failed")
         elif id is None and name is not None:
             try:
-                service_provider = User.objectsget(business_name=name)
+                service_provider = User.objects.get(business_name=name)
                 serializer = ServiceProviderSerializer(service_provider)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except User.DoesNotExist:
                 return api_response("Service provider not found", 404, "Failed")
         else:
             return api_response("Service provider not found", 404, "Failed")
-        
-            
-    
-    def put(self, request):
+          
+    def put(self, request, id):
         """
         This endpoint updates a service info
         """
@@ -315,11 +309,12 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         """
         This endpoint deletes a specified service from the database.
         """
-        if service_provider := self.get_object(id):
-            service_provider.delete()
-            return api_response("User deleted successfully", 204, "Success")
-        else:
+        try:
+            service_provider = User.objects.get(id=id)
+        except User.DoesNotExist:
             return api_response("Invalid User ID", 404, "Failed")
+        service_provider.delete()
+        return api_response("User deleted successfully", 204, "Success")
 
 
 class VerifyEmail(APIView):
@@ -344,7 +339,6 @@ class VerifyEmail(APIView):
             return api_response("Verification link expired", 400, "Failed")
         except jwt.exceptions.DecodeError:
             return api_response("Invalid token", 400, "Failed")
-
 
 class GetOTP(APIView):
     permission_classes = (IsAuthenticated,)
@@ -375,7 +369,6 @@ class GetOTP(APIView):
             message="Phone number is Invalid",
             status='Check Number'
         )
-
 
 class VerifyPhone(APIView):
     serializer_class = VerificationSerializer
@@ -420,7 +413,6 @@ class VerifyPhone(APIView):
             message="Error!",
             status='Failed'
         )
-
 
 class UpdatePhone(APIView):
     serializer_class = UpdatePhoneSerializer
@@ -470,7 +462,6 @@ class UpdatePhone(APIView):
             message="Error!",
             status='Failed'
         )
-
 
 class CustomerLogin(APIView):
     serializer_class = EmailLoginSerializer
@@ -552,7 +543,6 @@ class ServiceProviderLogin(APIView):
         else:
             return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
 
-
 class RefreshToken(APIView):
     serializer_class = TokenRefreshSerializer
 
@@ -581,7 +571,6 @@ class RefreshToken(APIView):
                     {"status_code": 200, "status": "Success", "message": response},
                     status=status.HTTP_200_OK,
                 )
-
 
 class ChangePassword(APIView):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
@@ -625,7 +614,6 @@ class ChangePassword(APIView):
         else:
             return api_response("Incorrect password", 400, "Failed")
 
-
 class ResetPasswordEmail(APIView):
     permission_classes = (AllowAny,)
 
@@ -658,7 +646,6 @@ class ResetPasswordEmail(APIView):
         else:
             return api_response("Invalid user email", 406, "Failed")
 
-
 class ResetPassword(APIView):
     permission_classes = (AllowAny,)
 
@@ -686,12 +673,6 @@ class ResetPassword(APIView):
                 return api_response("Passwords do not match", 400, "Failed")
         else:
             return api_response(password_validity["message"], 400, "Failed")
-
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-
 
 class DecodeToken(APIView):
     def post(self, request):
