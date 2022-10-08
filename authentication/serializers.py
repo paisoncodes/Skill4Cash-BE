@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework.validators import UniqueValidator
+
+from services.serializers import CategorySerializer
 from .models import TestImageUpload, User
 from phonenumber_field.modelfields import PhoneNumberField
 from src.utils import AuthUtil
@@ -112,6 +114,8 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, required=True)
     verified = serializers.SerializerMethodField(read_only=True)
     fullname = serializers.SerializerMethodField(read_only=True)
+
+    service_category = CategorySerializer()
 
     class Meta:
         model = User
