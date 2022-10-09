@@ -465,6 +465,7 @@ class UpdatePhone(APIView):
 
 class CustomerLogin(APIView):
     serializer_class = EmailLoginSerializer
+    permission_classes = (AllowAny,)
 
     @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
@@ -505,6 +506,7 @@ class CustomerLogin(APIView):
 
 class ServiceProviderLogin(APIView):
     serializer_class = EmailLoginSerializer
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         """This endpoint logs services in with their email/phone number and password.
