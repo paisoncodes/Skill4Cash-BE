@@ -20,6 +20,7 @@ from .views import (
     ResetPasswordEmail,
     CustomerLogin,
     RefreshToken,
+    SPLogin
 )
 
 from social_auth.views import(
@@ -39,9 +40,9 @@ urlpatterns = [
     path("auth/service-provider/login/", ServiceProviderLogin.as_view()),
     path("auth/login/refresh/", RefreshToken.as_view()),
     path("auth/verify-email/", VerifyEmail.as_view(), name="verify_email"),
-    path("auth/change-password", ChangePassword.as_view()),
-    path("auth/reset-password", ResetPassword.as_view()),
-    path("auth/reset-password-email", ResetPasswordEmail.as_view()),
+    path("auth/change-password/", ChangePassword.as_view()),
+    path("auth/reset-password/", ResetPassword.as_view()),
+    path("auth/reset-password-email/", ResetPasswordEmail.as_view()),
     path("auth/decode/", DecodeToken.as_view()),
     path("auth/test-upload/", TestImageUploadView.as_view()),
     path("auth/service-provider-gallery-update/", ServiceProviderGalleryUpload.as_view()),
@@ -49,4 +50,5 @@ urlpatterns = [
     path("auth/facebook/login/", FacebookSocialAuthView.as_view()),
     path("auth/google/login/", GoogleSocialAuthView.as_view()),
     path("util/category-upload/", PopulateCategory.as_view()),
+    path("auth/sp/login", SPLogin.as_view()),
 ]

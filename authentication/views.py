@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from authentication.utility import update_customer, update_service_provider
+from authentication.utility import get_user, update_customer, update_service_provider
 from services.serializers import CategorySerializer
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import BASE_DIR, HTTP
@@ -24,7 +24,6 @@ from .serializers import (
     CustomerRegistrationSerializer,
     CustomerSerializer,
     EmailLoginSerializer,
-    PhoneLoginSerializer,
     ServiceProviderSerializer,
     ServiceProviderRegistrationSerializer,
     TestImageUploadSerializer,
@@ -503,11 +502,51 @@ class CustomerLogin(APIView):
                 )
         else:
             return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
-
-class ServiceProviderLogin(APIView):
+class SPLogin(APIView):
     serializer_class = EmailLoginSerializer
     permission_classes = (AllowAny,)
 
+    @swagger_auto_schema(request_body=serializer_class)
+    def post(self, request):
+        """
+        This endpoint logs service providers in with their email/phone number and password.
+        """
+        if ("email" in request.data.keys() and "password" in request.data.keys()) or ("phone_number" in request.data.keys() and "password" in request.data.keys()):
+            pass
+        else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if "email" in request.data.keys():
+            try:
+                user = get_user(email=request.data["email"])
+            except User.DoesNotExist:
+                return api_response("Invalid login details", 400, "Failed")
+        elif "phone_number" in request.data.keys():
+            try:
+                user = get_user(phone_number=request.data["phone_number"])
+            except User.DoesNotExist:
+                return api_response("Invalid login details", 400, "Failed")
+        else:
+            return api_response("Please enter your email/phone number and password.", 400, "Failed")
+        if user.role == "service_provider":
+            response = AuthUtil.create_token(
+                email=user.email, password=request.data["password"]
+            )
+            if "error" in response.keys():
+                return api_response(response["error"], 400, "Failed")
+            else:
+                return api_response(
+                    status_code=200,
+                    message="Login successful",
+                    data=response,
+                    status="Success",
+                )
+        else:
+            return api_response("You're not a service provider. Try the logging in as a customer", 400, "Failed")
+
+class ServiceProviderLogin(APIView):
+    serializer_class = EmailLoginSerializer
+
+    @swagger_auto_schema(request_body=serializer_class)
     def post(self, request):
         """This endpoint logs services in with their email/phone number and password.
         """
@@ -543,7 +582,7 @@ class ServiceProviderLogin(APIView):
                     status="Success",
                 )
         else:
-            return api_response("You're not a service_provider. Try the logging in as a customer", 400, "Failed")
+            return api_response("You're not a service provider. Try the logging in as a customer", 400, "Failed")
 
 class RefreshToken(APIView):
     serializer_class = TokenRefreshSerializer

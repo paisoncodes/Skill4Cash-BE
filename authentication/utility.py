@@ -1,3 +1,6 @@
+from authentication.models import User
+
+
 def update_customer(instance:dict, validated_data:dict) -> dict:
     update_data = {
         "id": instance["id"],
@@ -30,3 +33,9 @@ def update_service_provider(instance, validated_data):
         "business_name": instance["business_name"] if "business_name" not in validated_data.keys() else validated_data["business_name"],
     }
     return update_data
+
+def get_user(phone_number:str=None, email:str=None):
+    if phone_number:
+        User.objects.get(phone_number=phone_number)
+    else:
+        User.objects.get(email=email)

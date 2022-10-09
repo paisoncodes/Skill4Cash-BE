@@ -285,12 +285,10 @@ class UpdatePhoneSerializer(serializers.Serializer):
 
 
 class EmailLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True)
-
-class PhoneLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
     phone_number = PhoneNumberField()
     password = serializers.CharField(required=True)
+
 
 
 class TokenRefreshSerializer(serializers.Serializer):
