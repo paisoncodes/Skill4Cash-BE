@@ -37,7 +37,7 @@ urlpatterns = [
     path("auth/update-phone/", UpdatePhone.as_view(), name="UpdatePhone"),
     path("auth/verify-phone/", VerifyPhone.as_view(), name="VerifyPhone"),
     path("auth/customer/login/", CustomerLogin.as_view()),
-    path("auth/service-provider/login/", ServiceProviderLogin.as_view()),
+    # path("auth/service-provider/login/", ServiceProviderLogin.as_view()),
     path("auth/login/refresh/", RefreshToken.as_view()),
     path("auth/verify-email/", VerifyEmail.as_view(), name="verify_email"),
     path("auth/change-password/", ChangePassword.as_view()),
