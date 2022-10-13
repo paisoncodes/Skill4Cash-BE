@@ -65,7 +65,6 @@ class ReadSPReviews(APIView):
 
 
 class CreateReadCategory(APIView):
-    permission_classes = (IsAuthenticated,)
     serializer_class = CategorySerializer
     category = Category.objects.all()
 
