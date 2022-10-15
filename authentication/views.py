@@ -230,14 +230,21 @@ class ServiceProviderRegister(APIView):
         """
         This endpoint creates a new service provider record in the database.
         """
-
+        s_c = request.data.pop("service_category")
         data = request.data
+
         if "profile_picture" in data.keys():
             data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email=data["email"]))
         serializer = ServiceProviderRegistrationSerializer(data=data)
 
+        category = Category.objects.filter(name__iexact=s_c['name'])
+        if category.exists():
+            service_category = category.first()
+        else:
+            service_category = Category.objects.create(**s_c)
+
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(service_category=service_category)
 
             user_data = request.data
             return_data = AuthUtil.send_verification_link(user_data, request, serializer)
