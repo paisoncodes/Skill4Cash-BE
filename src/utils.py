@@ -146,8 +146,9 @@ class AuthUtil:
             return {"status": False, "message": "Enter Valid E-mail"}
     
     @staticmethod
-    def create_token(email:str, password:str) -> dict:
-        user = authenticate(email=email, password=password)
+    def create_token(request, email:str, password:str) -> dict:
+        
+        user = authenticate(request, email=email, password=password)
         if user.is_verified:
             if user:
                 refresh = RefreshToken.for_user(user)
