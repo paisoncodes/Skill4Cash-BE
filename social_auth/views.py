@@ -73,7 +73,7 @@ class FacebookSocialAuthView(GenericAPIView):
                             username=usn, state=validated_state,
                             city=validated_city, role=validated_role.lower())
             
-            if User.objects.get(email=user_data['email']).role[0] == 's':
+            if User.objects.get(email=user_data['email']).role[0] == 'service_provider':
                 message = "Service Provider Successfully Created or Logged In"
             else:
                 message = "Customer Successfully Created or Logged In"
