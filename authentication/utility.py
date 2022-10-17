@@ -34,8 +34,9 @@ def update_service_provider(instance, validated_data):
     }
     return update_data
 
-def get_user(phone_number:str=None, email:str=None):
+def get_user(phone_number:str=None, email:str=None) -> User:
     if phone_number:
         User.objects.get(phone_number=phone_number)
     else:
         User.objects.get(email=email)
+    return User

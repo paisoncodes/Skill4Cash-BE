@@ -19,6 +19,11 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = "__all__"
 
+        extra_kwargs = {
+        "name": {"required": False},
+        "image": {"required": False}
+        }
+
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule

@@ -115,7 +115,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
     verified = serializers.SerializerMethodField(read_only=True)
     fullname = serializers.SerializerMethodField(read_only=True)
 
-    service_category = CategorySerializer()
+    service_category = CategorySerializer(required=False)
 
     class Meta:
         model = User
@@ -143,7 +143,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "first_name": {"required": True},
             "last_name": {"required": True},
-            "business_name": {"required": True},
+            "business_name": {"required": True}
         }
         read_only_fields = [
             "verified",
@@ -163,6 +163,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+
         del validated_data["confirm_password"]
         user = User.objects.create_user(**validated_data, role="service_provider")
         return user
@@ -260,10 +261,7 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
             "is_verified_business",
         ]
 
-    # def update(self, instance, validated_data):
-    #     if "gallery" in validated_data.keys():
 
-    #     return super().update(instance, validated_data)
     def get_fullname(self, obj):
         if hasattr(obj, "id"):
             return obj.get_full_name()
