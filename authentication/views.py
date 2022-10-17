@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from authentication.utility import get_user, update_customer, update_service_provider
+from authentication.utility import update_customer, update_service_provider
 from services.serializers import CategorySerializer
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import BASE_DIR, HTTP
@@ -495,7 +495,7 @@ class CustomerLogin(APIView):
         else:
             return api_response("Please enter your email/phone number and password.", 400, "Failed")
         if user.role == "customer":
-            response = AuthUtil.create_token(
+            response = AuthUtil.create_token(request,
                 email=user.email, password=request.data["password"]
             )
             if "error" in response.keys():
@@ -509,6 +509,7 @@ class CustomerLogin(APIView):
                 )
         else:
             return api_response("You're not a customer. Try the logging in as a service provider", 400, "Failed")
+
 class SPLogin(APIView):
     serializer_class = EmailLoginSerializer
     permission_classes = (AllowAny,)
@@ -524,18 +525,19 @@ class SPLogin(APIView):
             return api_response("Please enter your email/phone number and password.", 400, "Failed")
         if "email" in request.data.keys():
             try:
-                user = get_user(email=request.data["email"])
+                user = User.objects.get(email=request.data["email"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
         elif "phone_number" in request.data.keys():
             try:
-                user = get_user(phone_number=request.data["phone_number"])
+                user = User.objects.get(phone_number=request.data["phone_number"])
             except User.DoesNotExist:
                 return api_response("Invalid login details", 400, "Failed")
         else:
             return api_response("Please enter your email/phone number and password.", 400, "Failed")
+
         if user.role == "service_provider":
-            response = AuthUtil.create_token(
+            response = AuthUtil.create_token(request,
                 email=user.email, password=request.data["password"]
             )
             if "error" in response.keys():
