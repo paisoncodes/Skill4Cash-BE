@@ -302,7 +302,6 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         service_provider = User.objects.get(email=request.user.email)
         data= request.data
         if "keywords" in data.keys():
-            print(data["keywords"])
             data["keywords"]=data["keywords"].split(",")
         if "profile_picture" in data.keys():
             data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = service_provider.email))["image_url"]
@@ -312,7 +311,7 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
             serializer.save()
             return api_response("Update successful", 202, "Success", serializer.data)
         else:
-            return api_response("Update failed", 400, "Failed", serializer.errors)
+            return api_response("Update failed", 400, "Failed", [serializer.errors, data["keywords"]])
 
     def delete(self, request, id):
         """
