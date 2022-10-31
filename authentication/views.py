@@ -241,7 +241,7 @@ class ServiceProviderRegister(APIView):
         if category.exists():
             service_category = category.first()
         else:
-            service_category = Category.objects.create(**s_c)
+            service_category = Category.objects.create(name=s_c)
 
         if serializer.is_valid():
             serializer.save(service_category=service_category)

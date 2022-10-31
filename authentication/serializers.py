@@ -133,6 +133,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
             "city",
             "verified",
             "gallery",
+            "keywords",
             "email_verification",
             "phone_verification",
             "role",
@@ -148,6 +149,7 @@ class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "verified",
             "gallery",
+            "keywords",
             "role",
             "fullname",
             "email_verification",
