@@ -301,6 +301,9 @@ class ServiceProviderRetrieveUpdateDelete(APIView):
         """
         service_provider = User.objects.get(email=request.user.email)
         data= request.data
+        if "keywords" in data.keys():
+            print(data["keywords"])
+            data["keywords"]=data["keywords"].split(",")
         if "profile_picture" in data.keys():
             data["profile_picture"] = (UploadUtil.upload_profile_picture(data["profile_picture"], email = service_provider.email))["image_url"]
         upload = update_service_provider((self.serializer_class(service_provider)).data, data)
