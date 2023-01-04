@@ -116,12 +116,11 @@ WSGI_APPLICATION = "src.wsgi.application"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 prod_db = dj_database_url.config(conn_max_age=500)
-HEROKU = config("HEROKU", cast=bool)
-if HEROKU:
-    DATABASES = {"default": prod_db}
-    db_from_env = dj_database_url.config(conn_max_age=0, ssl_require=False)
-    DATABASES["default"].update(db_from_env)
-    DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
+PRODUCTION = config("PRODUCTION", cast=bool)
+if PRODUCTION:
+    DATABASES = {
+    'default': dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
+}
 
 
 else:
