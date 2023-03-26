@@ -1,4 +1,4 @@
-from src.utils import api_response
+from utils.utils import api_response
 from authentication.models import User
 from social_auth.google import Google
 from social_auth.facebook import Facebook

@@ -115,27 +115,19 @@ WSGI_APPLICATION = "src.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-prod_db = dj_database_url.config(conn_max_age=500)
-HEROKU = config("HEROKU", cast=bool)
-if HEROKU:
-    DATABASES = {"default": prod_db}
-    db_from_env = dj_database_url.config(conn_max_age=0, ssl_require=False)
-    DATABASES["default"].update(db_from_env)
-    DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
 
-
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": config("DATABASE"),
-            "USER": config("USER_NAME"),
-            "PASSWORD": config("PASSWORD"),
-            "HOST": config("HOST"),
-            "PORT": config("PORT"),
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": config("DB_ENGINE"),
+        "NAME": config("POSTGRES_DB"),
+        "USER": config("POSTGRES_USER"),
+        "PASSWORD": config("POSTGRES_PASSWORD"),
+        "HOST": config("POSTGRES_HOST"),
+        "PORT": config("POSTGRES_PORT"),
     }
+}
 
+DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators

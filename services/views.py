@@ -1,4 +1,4 @@
-from src.utils import api_response
+from utils.utils import api_response
 from .serializers import RatingSerializer, CategorySerializer, ScheduleSerializer
 
 from .models import Rating, Schedule

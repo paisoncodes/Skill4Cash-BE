@@ -1,7 +1,7 @@
 from rest_framework.exceptions import AuthenticationFailed
 from authentication.models import User
 from django.conf import settings
-from src.utils import AuthUtil
+from utils.utils import AuthUtil
 from random import randint
 
 

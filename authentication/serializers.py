@@ -5,7 +5,7 @@ from rest_framework.validators import UniqueValidator
 from services.serializers import CategorySerializer
 from .models import TestImageUpload, User
 from phonenumber_field.modelfields import PhoneNumberField
-from src.utils import AuthUtil
+from utils.utils import AuthUtil
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -44,23 +44,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = (
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "phone_number",
-            "password",
-            "profile_picture",
-            "confirm_password",
-            "state",
-            "city",
-            "verified",
-            "email_verification",
-            "phone_verification",
-            "role",
-            "fullname",
-        )
+        fields = "__all__"
         extra_kwargs = {
             "first_name": {"required": True},
             "last_name": {"required": True},
@@ -73,28 +57,6 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
             "phone_verification",
             "fullname",
         ]
-
-    def validate(self, attrs):
-        if attrs["password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError(
-                {"Password": "Password fields didn't match."}
-            )
-        return attrs
-
-    def create(self, validated_data):
-        del validated_data["confirm_password"]
-        user = User.objects.create_user(**validated_data, role="customer")
-        return user
-
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
-
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
 
 
 class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):

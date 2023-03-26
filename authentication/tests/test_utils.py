@@ -1,4 +1,4 @@
-from src.utils import send_otp, otp_session
+from utils.utils import send_otp, otp_session
 from authentication.models import User
 from django.test import TestCase
 import unittest

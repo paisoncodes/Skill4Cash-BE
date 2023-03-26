@@ -15,7 +15,7 @@ from authentication.utility import get_user, update_customer, update_service_pro
 from services.serializers import CategorySerializer
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import BASE_DIR, HTTP
-from src.utils import AuthUtil, UploadUtil, api_response
+from utils.utils import AuthUtil, UploadUtil, api_response
 from drf_yasg.utils import swagger_auto_schema
 from decouple import config
 
