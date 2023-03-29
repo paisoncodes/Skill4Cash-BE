@@ -21,13 +21,13 @@ services:
 
   skill4cash-api:
     build: .
-    command: python manage.py runserver 0.0.0.0:6000
+    command: python manage.py runserver 0.0.0.0:9800
     volumes:
       - .:/app
     ports:
-      - "6000:6000"
+      - "9800:9800"
     expose:
-      - 8000
+      - 9800
     restart: always
 
     depends_on:

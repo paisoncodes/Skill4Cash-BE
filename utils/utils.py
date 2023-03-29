@@ -1,4 +1,5 @@
 import base64
+import json
 import re
 import string
 from datetime import time
@@ -11,15 +12,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from rest_framework.response import Response
 from typing import Any
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_202_ACCEPTED,
-    HTTP_204_NO_CONTENT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_404_NOT_FOUND,
-    HTTP_406_NOT_ACCEPTABLE,
-)
+from rest_framework import status as status_code
 from rest_framework_simplejwt.tokens import RefreshToken
 from authentication.models import User
 from django.contrib.auth import authenticate
@@ -321,22 +314,21 @@ class UploadUtil:
             }
     
 
-def api_response(message: "str", status_code: "int", status: "str", data: "Any" = []) -> Response:
-
-    response = {"message": message, "status": status, "results": data}
-
-    if status_code == 200:
-        return JsonResponse(response, status=HTTP_200_OK)
-
-    elif status_code == 201:
-        return JsonResponse(response, status=HTTP_201_CREATED)
-    elif status_code == 202:
-        return JsonResponse(response, status=HTTP_202_ACCEPTED)
-    elif status_code == 204:
-        return JsonResponse(response, status=HTTP_204_NO_CONTENT)
-    elif status_code == 400:
-        return JsonResponse(response, status=HTTP_400_BAD_REQUEST)
-    elif status_code == 404:
-        return JsonResponse(response, status=HTTP_404_NOT_FOUND)
-    elif status_code == 406:
-        return JsonResponse(response, status=HTTP_406_NOT_ACCEPTABLE)
+def api_response(message:str, data:json, status:bool, code:int)->Response:
+    response = {
+        "message": message,
+        "data": data,
+        "status": status,
+    }
+    if code == 200:
+        return Response(response, status=status_code.HTTP_200_OK)
+    elif code == 201:
+        return Response(response, status=status_code.HTTP_201_CREATED)
+    elif code == 202:
+        return Response(response, status=status_code.HTTP_202_ACCEPTED)
+    elif code == 400:
+        return Response(response, status=status_code.HTTP_400_BAD_REQUEST)
+    elif code == 401:
+        return Response(response, status=status_code.HTTP_401_UNAUTHORIZED)
+    else:
+        return Response(response, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)

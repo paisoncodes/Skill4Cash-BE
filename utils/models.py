@@ -9,6 +9,9 @@ class BaseModel(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     last_update = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        abstract = True
+
 
 class Category(BaseModel):
     name = models.CharField(max_length=225, unique=True)
@@ -19,6 +22,12 @@ class Category(BaseModel):
 
     def __str__(self) -> str:
         return self.name
+
+class Keyword(models.Model):
+    keyword = models.CharField(max_length=225, unique=True)
+    
+    def __str__(self) -> str:
+        return self.keyword
 
 
 class State(models.Model):

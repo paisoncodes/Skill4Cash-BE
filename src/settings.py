@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'social_auth',
     # "chat",
     "cloudinary",
+    'utils',
 ]
 
 SITE_ID = 1
@@ -182,6 +183,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "relative_paths": False,
+    'displayOperationId': True,
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    },
 }
 
 
