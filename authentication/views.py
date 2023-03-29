@@ -16,7 +16,8 @@ from authentication.utility import get_user, update_customer, update_service_pro
 from services.serializers import CategorySerializer
 from src.permissions import IsOwnerOrReadOnly
 from src.settings import BASE_DIR, HTTP
-from utils.utils import AuthUtil, UploadUtil, api_response
+from utils.otp import get_otp, verify_otp
+from utils.utils import AuthUtil, UploadUtil, api_response, validate_phone_number
 from drf_yasg.utils import swagger_auto_schema
 from decouple import config
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -24,17 +25,15 @@ from django.contrib.auth.hashers import check_password, make_password
 
 from .models import Category, TestImageUpload, User, UserProfile
 from .serializers import (
+    ChangePasswordSerializer,
     CustomerRegistrationSerializer,
-    CustomerSerializer,
     LoginSerializer,
-    ServiceProviderSerializer,
-    ServiceProviderRegistrationSerializer,
+    ResendTokenSerializer,
+    SendPhoneOtpSerializer,
+    VerifyPhoneOtpSerializer,
+    VerifyTokenSerializer,
     TestImageUploadSerializer,
-    TokenRefreshSerializer,
-    UpdatePhoneSerializer,
     UserProfileSerializer,
-    VerificationSerializer,
-    UserSerializer,
 )
 
 path = os.path.join(BASE_DIR, 'authentication')
@@ -46,8 +45,13 @@ class RegisterCustomer(GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return api_response("Registration successful", {}, True, 200)
+            user = serializer.save()
+            otp = get_otp(user)
+            subject = "Please Verify Your Email"
+            message = f"Your Aquiline Alerts code is {otp}."
+            # send_mail(user.email, subject=subject, body=message)
+            data = {'message': "User account creation successful", 'otp': otp}
+            return api_response("Registration successful", data, True, 201)
         return api_response("Registration failed", serializer.errors, False, 400)
 
 class ProfileRetrieveUpdateView(GenericAPIView):
@@ -97,7 +101,7 @@ class Login(GenericAPIView):
         check = check_password(data["password"], current_password)
 
         if check:
-            # if user.email_verified:
+            if user.email_verified:
                 data = {
                     "user_id": user.id,
                     "email": user.email
@@ -112,14 +116,14 @@ class Login(GenericAPIView):
                     data["is_verified"] = user.email_verified
                 return api_response("Login Successful", data, True, 200)
     
-            # else:
-            #     return Response(
-            #         {
-            #             "message": "Account not verified, Please verify your email",
-            #             "status": False,
-            #         },
-            #         status=status.HTTP_400_BAD_REQUEST,
-            #     )
+            else:
+                return Response(
+                    {
+                        "message": "Account not verified, Please verify your email",
+                        "status": False,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             if user_profile.auth_provider == UserProfile.AuthProvider.GOOGLE:
                 return Response(
@@ -136,7 +140,160 @@ class Login(GenericAPIView):
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-            
+
+class VerifyOtp(GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = VerifyTokenSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            code = serializer.data["code"]
+            email = serializer.data["email"]
+            user = get_object_or_404(User, email=email)
+            if verify_otp(user, code):
+                user.is_active = True
+                user.email_verified = True
+                user.save()
+                return Response(
+                    {"message": "Email verified", "status": True},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"message": "Code invalid or expired", "status": False},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"message": serializer.errors, "status": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )            
+
+class ResendOtp(GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = ResendTokenSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            email = serializer.data["email"]
+            user = get_object_or_404(User, email=email)
+            if user.email_verified:
+                return Response(
+                    {"message": "Email already verified", "status": False},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                otp = get_otp(user)
+                subject = "Please Verify Your Email"
+                message =  f"Your Aquiline Alerts code is {otp}."
+
+                # send_mail(user.email, subject=subject, body=message)
+                return Response(
+                    {
+                        "message": "Email Sent" if True else "Email not sent",
+                        "status": True,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+        else:
+            return Response(
+                {"message": serializer.errors, "status": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class VerifyPhoneNumberOtp(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = VerifyPhoneOtpSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            code = serializer.data["code"]
+            user = get_object_or_404(User, pk=request.user.pk)
+            if verify_otp(user, code):
+                user.is_active = True
+                user.phone_verified = True
+                user.save()
+                return Response(
+                    {"message": "Phone Number verified", "status": True},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"message": "Code invalid or expired", "status": False},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"message": serializer.errors, "status": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class SendPhoneNumberOtp(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SendPhoneOtpSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"message": serializer.errors, "status": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        phone_number = serializer.data["phone_number"]
+        check_phone = validate_phone_number(phone_number)
+        if not check_phone:
+            return api_response("Invalid phone number", {}, False, 400)
+        user = request.user
+        user.phone_number = phone_number
+        user.save()
+        otp = get_otp(user)
+        message = f"Your Aquiline Alerts code is {otp}."
+
+        # send_message(phone_number, message, user.email)
+        
+        return Response(
+            {"message": "OTP sent to phone number", "status": True},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangePassword(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"message": serializer.errors, "status": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = get_object_or_404(User, pk=request.user.pk)
+        data = serializer.data
+        check = check_password(data["old_password"], user.password)
+        if check:
+            user.password = make_password(data["new_password"])
+            user.save()
+            return Response(
+                {
+                    "message": "Password Change Successful",
+                    "status": True,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "message": "old password is incorrect",
+                "status": False,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class TestImageUploadView(APIView):
     queryset = TestImageUpload.objects.all()

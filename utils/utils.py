@@ -3,7 +3,7 @@ import json
 import re
 import string
 from datetime import time
-from random import choice
+from random import choice, randint
 from cloudinary import uploader, CloudinaryImage
 
 import jwt
@@ -332,3 +332,37 @@ def api_response(message:str, data:json, status:bool, code:int)->Response:
         return Response(response, status=status_code.HTTP_401_UNAUTHORIZED)
     else:
         return Response(response, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# def send_mail(receiver:str, subject:str, body:str) -> None:
+#     sg = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+#     from_email = Email("olatunji@gdsplusltd.com")
+#     to_email = To(receiver)
+#     subject = subject
+#     content = Content("text/plain", body)
+#     mail = Mail(from_email, to_email, subject, content)
+#     response = sg.client.mail.send.post(request_body=mail.get())
+#     # response = json.loads(response)
+#     Emails.objects.create(
+#         receiver=receiver,
+#         message=body,
+#         sent= True if response.status_code == 202 else False,
+#         response_message=response.body if response.status_code == 202 else "",
+#         status_code=response.status_code,
+#         email = receiver,
+#         subject=subject,
+#     )
+
+def validate_phone_number(phone_number:str)->bool:
+    if len(phone_number) > 13:
+        return False
+    if len(phone_number) < 13:
+        return False
+    if phone_number[:3] != "234":
+        return False
+    return True
+
+
+def random_with_n_digits(n=12):
+    range_start = 10 ** (n - 1)
+    range_end = (10**n) - 1
+    return randint(range_start, range_end)

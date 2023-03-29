@@ -136,125 +136,36 @@ class UserBusinessProfileSerializer(serializers.ModelSerializer):
     def get_user_email(self, instance):
         return instance.user.email
 
-class CustomerSerializer(serializers.ModelSerializer):
-    verified = serializers.SerializerMethodField(read_only=True)
-    fullname = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "email",
-            "first_name",
-            "last_name",
-            "state",
-            "city",
-            "profile_picture",
-            "verified",
-            "email_verification",
-            "phone_verification",
-            "role",
-            "fullname",
-        )
-        read_only_fields = [
-            "verified",
-            "role",
-            "fullname",
-            "email_verification",
-            "phone_verification",
-        ]
-
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
-
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
-
-
-class ServiceProviderSerializer(serializers.ModelSerializer):
-
-    verified = serializers.SerializerMethodField(read_only=True)
-    fullname = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "email",
-            "first_name",
-            "last_name",
-            "state",
-            "city",
-            "business_name",
-            "service_category",
-            "profile_picture",
-            "keywords",
-            "gallery",
-            "card_front",
-            "card_back",
-            "pob",
-            "role",
-            "fullname",
-            "verified",
-            "email_verification",
-            "phone_verification",
-            "is_verified_business",
-        )
-        extra_kwargs = {
-            "first_name": {"required": True},
-            "last_name": {"required": True},
-            "business_name": {"required": True},
-        }
-        read_only_fields = [
-            "verified",
-            "role",
-            "fullname",
-            "email_verification",
-            "phone_verification",
-            "is_verified_business",
-        ]
-
-    # def update(self, instance, validated_data):
-    #     if "gallery" in validated_data.keys():
-
-    #     return super().update(instance, validated_data)
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
-
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
-
-
-class VerificationSerializer(serializers.Serializer):
-    otp = serializers.CharField(required=True, write_only=True)
-
-
-class UpdatePhoneSerializer(serializers.Serializer):
-    otp = serializers.CharField(required=True, write_only=True)
-    number = serializers.CharField(required=True, write_only=True)
-
-
-class EmailLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=False)
-    phone_number = PhoneNumberField()
-    password = serializers.CharField(required=True)
-
+class VerifyTokenSerializer(serializers.Serializer):
+    code = serializers.IntegerField()
+    email = serializers.EmailField()
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
     user_type = serializers.CharField()
 
-class TokenRefreshSerializer(serializers.Serializer):
-    refresh = serializers.CharField(required=True)
+class ResendTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField()
+    new_password = serializers.CharField()
+
+
+class SendPhoneOtpSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(help_text="Example: 2348012345678")
+
+
+class VerifyPhoneOtpSerializer(serializers.Serializer):
+    code = serializers.IntegerField()
 
 class TestImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
