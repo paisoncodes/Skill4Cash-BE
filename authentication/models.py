@@ -45,7 +45,6 @@ class UserProfile(BaseModel):
     lga = models.ForeignKey(Lga, null=True, on_delete=models.SET_NULL)
     user_type = models.CharField(max_length=20, choices=UserType.choices)
     profile_picture = models.URLField(default="https://res.cloudinary.com/skill4cash/image/upload/v1/profile/default")
-    is_verified = models.BooleanField(default=False)
     auth_provider = models.CharField(max_length=255, default=AuthProvider.EMAIL, choices=AuthProvider.choices)
     phone_number = models.CharField(max_length=13, unique=True)
     

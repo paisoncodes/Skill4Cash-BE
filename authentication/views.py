@@ -23,7 +23,7 @@ from decouple import config
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password, make_password
 
-from .models import Category, TestImageUpload, User, UserProfile
+from .models import BusinessProfile, Category, TestImageUpload, User, UserProfile
 from .serializers import (
     ChangePasswordSerializer,
     CustomerRegistrationSerializer,
@@ -31,6 +31,8 @@ from .serializers import (
     ResendTokenSerializer,
     SendPhoneOtpSerializer,
     ServiceProviderProfileSetUpSerializer,
+    UserBusinessProfileSerializer,
+    UserBusinessProfileViewSerializer,
     VerifyPhoneOtpSerializer,
     VerifyTokenSerializer,
     TestImageUploadSerializer,
@@ -99,7 +101,50 @@ class SetUpServiceProviderProfile(GenericAPIView):
 
     def post(self, request):
         data = request.data
+        data["user"] = request.user.id
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            profile = serializer.save()
+            business_profile = (UserBusinessProfileViewSerializer(BusinessProfile.objects.filter(user=profile.user).first())).data
+            data = {
+                "email": request.user.email,
+                "full_name": f"{profile.first_name} {profile.last_name}",
+                "phone_number": profile.phone_number,
+                "user_type": profile.user_type,
+                "profile_picture": profile.profile_picture,
+                "state": profile.state.state,
+                "lga": profile.lga.lga,
+                "verified": request.user.email_verified,
+                "phone_verified": profile.phone_verified,
+                "business_name": business_profile["business_name"],
+                "description": business_profile["description"],
+                "category": business_profile["service_category"],
+                "keywords": business_profile["keywords"],
+                "gallery": business_profile["gallery"]
+            }
+            return api_response("Profile updated", data, True, 200)
+        return api_response("Profile update failed", serializer.errors, False, 400)
 
+class BusinessProfileRetrieveUpdateView(GenericAPIView):
+    serializer_class = UserBusinessProfileSerializer
+    permission = (IsAuthenticated,)
+
+    def get(self, request):
+        user = request.user
+        profile = get_object_or_404(BusinessProfile, user=user)
+        serializer = self.serializer_class(profile)
+
+        return api_response("Profile Retrieved", serializer.data, True, 200)
+    
+    def put(self, request):
+        user = request.user
+        profile = get_object_or_404(BusinessProfile, user=user)
+        serializer = self.serializer_class(data=request.data, partial=True)
+        if not serializer.is_valid():
+            return api_response("ERROR", serializer.errors, False, 400)
+        serializer.update(instance=profile, validated_data=serializer.validated_data)
+        return api_response("Profile updated", serializer.data, True, 202)
+    
 
 class Login(GenericAPIView):
     permission_classes = [AllowAny]
@@ -147,6 +192,7 @@ class Login(GenericAPIView):
                     {
                         "message": "Account not verified, Please verify your email",
                         "status": False,
+                        "data": {}
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -361,4 +407,3 @@ class PopulateCategory(APIView):
                 Category.objects.create(name=name, image=image_url)
         serializer = self.serializer_class(Category.objects.all(), many=True)
         return api_response("Categories uploaded successfully", 201, "Success", serializer.data)
-

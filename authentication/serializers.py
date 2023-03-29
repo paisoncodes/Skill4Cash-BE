@@ -4,7 +4,7 @@ from rest_framework.reverse import reverse
 from rest_framework.validators import UniqueValidator
 
 from services.serializers import CategorySerializer
-from utils.models import Lga, State
+from utils.models import Category, Keyword, Lga, State
 from .models import BusinessProfile, TestImageUpload, User, UserProfile
 from phonenumber_field.modelfields import PhoneNumberField
 from utils.utils import AuthUtil
@@ -59,7 +59,7 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
 
 
 class PhotoSerializer(serializers.Serializer):
-    url = serializers.URLField(required=True)
+    url = serializers.URLField(required=False)
     id = serializers.CharField(default=uuid4, read_only=True)
 
 class ServiceProviderRegistrationSerializer(serializers.Serializer):
@@ -73,33 +73,42 @@ class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField()
     state = serializers.CharField()
     lga = serializers.CharField()
-    profile_picture = serializers.URLField()
     business_name = serializers.CharField()
     service_category = serializers.CharField()
     gallery_photos = serializers.ListField(child=PhotoSerializer(), required=False)
-    keywords = serializers.ListField(child=serializers.IntegerField())
+    keywords = serializers.ListField(child=serializers.CharField())
     description = serializers.CharField()
+    user = serializers.UUIDField(required=False)
 
     class Meta:
         model = UserProfile
-        fields = ["first_name", "last_name", "state", "lga", "profile_picture", "phone_number", "password", "business_name", "service_category", "gallery_photos", "keywords", "description"]
+        fields = ["first_name", "last_name", "state", "lga", "profile_picture", "phone_number", "password", "business_name", "service_category", "gallery_photos", "keywords", "description", "user"]
     
-    def create(self, profile_data):
+    def create(self, validated_data):
         business_profile = {}
-        business_profile["user"] = profile_data["user"] = user = User.objects.filter(id=profile_data["user"])
+        business_profile["user"] = validated_data["user"] = user = User.objects.filter(id=validated_data["user"]).first()
 
-        user.set_password(profile_data.pop("password"))
+        user.set_password(validated_data.pop("password"))
 
-        business_profile["business_name"] = profile_data.pop('business_name')
-        business_profile["service_category"] = profile_data.pop('service_category')
-        business_profile["gallery_photos"] = profile_data.pop('gallery_photos')
-        business_profile["keywords"] = profile_data.pop('keywords')
-        business_profile["description"] = profile_data.pop('description')
-        profile_data["user_type"] = UserProfile.UserType.SERVICE_PROVIDER
+        business_profile["business_name"] = validated_data.pop('business_name')
+        service_category = validated_data.pop('service_category')
+        category, created = Category.objects.get_or_create(name=service_category)
+        business_profile["service_category"] = category
+        business_profile["gallery"] = validated_data.pop('gallery_photos')
+        keywords = validated_data.pop('keywords')
+        business_profile["description"] = validated_data.pop('description')
+        validated_data["state"] = State.objects.get(state__iexact=validated_data['state'])
+        validated_data["lga"] = Lga.objects.get(lga__iexact=validated_data['lga'])
+        validated_data["user_type"] = UserProfile.UserType.SERVICE_PROVIDER
 
-        profile = UserProfile.objects.create(**profile_data)
+        profile, created = UserProfile.objects.get_or_create(**validated_data)
 
-        BusinessProfile.objects.create(**business_profile)
+        business, created = BusinessProfile.objects.get_or_create(**business_profile)
+
+        for keyword in keywords:
+            word, created = Keyword.objects.get_or_create(keyword=keyword)
+            business.keywords.add(word)
+        business.save()
 
         
 
@@ -122,10 +131,49 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_user_email(self, instance):
         return instance.user.email
     
+class UserBusinessProfileViewSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    service_category = serializers.StringRelatedField()
+    keywords = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = BusinessProfile
+        exclude = (
+            "user",
+            "id",
+            "date_created",
+            "last_update"
+        )
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+    
 class UserBusinessProfileSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(
         read_only=True, method_name="get_user_email"
     )
+    service_category = serializers.StringRelatedField()
+    keywords = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = BusinessProfile
+        exclude = (
+            "user",
+            "id",
+            "date_created",
+            "last_update"
+        )
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+class UserBusinessProfileSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    service_category = serializers.StringRelatedField()
+    keywords = serializers.StringRelatedField(many=True)
 
     class Meta:
         model = BusinessProfile
