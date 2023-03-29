@@ -62,8 +62,11 @@ class PhotoSerializer(serializers.Serializer):
     url = serializers.URLField(required=True)
     id = serializers.CharField(default=uuid4, read_only=True)
 
+class ServiceProviderRegistrationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
-class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
+
+class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
     password = serializers.CharField(write_only=True)
     first_name = serializers.CharField()

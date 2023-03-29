@@ -30,10 +30,12 @@ from .serializers import (
     LoginSerializer,
     ResendTokenSerializer,
     SendPhoneOtpSerializer,
+    ServiceProviderProfileSetUpSerializer,
     VerifyPhoneOtpSerializer,
     VerifyTokenSerializer,
     TestImageUploadSerializer,
     UserProfileSerializer,
+    ServiceProviderRegistrationSerializer,
 )
 
 path = os.path.join(BASE_DIR, 'authentication')
@@ -73,6 +75,30 @@ class ProfileRetrieveUpdateView(GenericAPIView):
             return api_response("ERROR", serializer.errors, False, 400)
         serializer.update(instance=profile, validated_data=serializer.validated_data)
         return api_response("Profile updated", serializer.data, True, 202)
+
+
+class RegisterServiceProvider(GenericAPIView):
+    serializer_class = ServiceProviderRegistrationSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user = User.objects.create_user(**serializer.data, password="newsp")
+            otp = get_otp(user)
+            subject = "Please Verify Your Email"
+            message = f"Your Aquiline Alerts code is {otp}."
+            # send_mail(user.email, subject=subject, body=message)
+            data = {'message': "User account creation successful", 'otp': otp}
+            return api_response("Registration successful", data, True, 201)
+        return api_response("Registration failed", serializer.errors, False, 400)
+
+class SetUpServiceProviderProfile(GenericAPIView):
+    serializer_class = ServiceProviderProfileSetUpSerializer
+    permission = (IsAuthenticated,)
+
+    def post(self, request):
+        data = request.data
 
 
 class Login(GenericAPIView):
@@ -155,10 +181,14 @@ class VerifyOtp(GenericAPIView):
                 user.is_active = True
                 user.email_verified = True
                 user.save()
-                return Response(
-                    {"message": "Email verified", "status": True},
-                    status=status.HTTP_200_OK,
-                )
+                data = {
+                    "user_id": user.id,
+                    "email": user.email
+                }
+
+                refresh = RefreshToken.for_user(user)
+                data["access_token"] = str(refresh.access_token)
+                return api_response("VerificationSuccessful", data, True, 200)
             else:
                 return Response(
                     {"message": "Code invalid or expired", "status": False},
