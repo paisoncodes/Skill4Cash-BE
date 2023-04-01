@@ -131,6 +131,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_user_email(self, instance):
         return instance.user.email
     
+class UserProfileViewSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    state = serializers.StringRelatedField()
+    lga = serializers.StringRelatedField()
+
+    class Meta:
+        model = UserProfile
+        exclude = (
+            "user",
+            "id",
+            "date_created",
+            "last_update"
+        )
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+    
 class UserBusinessProfileViewSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(
         read_only=True, method_name="get_user_email"

@@ -33,6 +33,7 @@ from .serializers import (
     ServiceProviderProfileSetUpSerializer,
     UserBusinessProfileSerializer,
     UserBusinessProfileViewSerializer,
+    UserProfileViewSerializer,
     VerifyPhoneOtpSerializer,
     VerifyTokenSerializer,
     TestImageUploadSerializer,
@@ -65,7 +66,7 @@ class ProfileRetrieveUpdateView(GenericAPIView):
     def get(self, request):
         user = request.user
         profile = get_object_or_404(UserProfile, user=user)
-        serializer = self.serializer_class(profile)
+        serializer = UserProfileViewSerializer(profile)
 
         return api_response("Profile Retrieved", serializer.data, True, 200)
     
