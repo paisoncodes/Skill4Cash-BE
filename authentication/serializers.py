@@ -26,43 +26,35 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
-class CustomerRegistrationSerializer(serializers.ModelSerializer):
+class CustomerProfileSetUpSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
-    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     state = serializers.CharField()
     lga = serializers.CharField()
+    user = serializers.UUIDField()
 
     class Meta:
-        model = User
-        fields = ["email", "first_name", "last_name", "state", "lga", "phone_number", "password"]
+        model = UserProfile
+        fields = ["first_name", "last_name", "state", "lga", "phone_number", "password", "user"]
     
     def create(self, validated_data):
-        data = validated_data.copy()
-        validated_data.pop('first_name')
-        validated_data.pop('last_name')
-        data["state"] = State.objects.get(state__iexact=validated_data.pop('state'))
-        data["lga"] = Lga.objects.get(lga__iexact=validated_data.pop('lga'))
-        validated_data.pop('phone_number')
+        validated_data["user"] = user = User.objects.filter(id=validated_data["user"]).first()
+        validated_data["user_type"] = UserProfile.UserType.CUSTOMER
 
-        user = User.objects.create_user(**validated_data)
-        data.pop('email')
-        data.pop('password')
-        data["user"] = user
-        data["user_type"] = UserProfile.UserType.CUSTOMER
+        user.set_password(validated_data.pop("password"))
 
-        UserProfile.objects.create(**data)
+        profile = UserProfile.objects.create(**validated_data)
 
-        return user
+        return profile
 
 
 class PhotoSerializer(serializers.Serializer):
     url = serializers.URLField(required=False)
     id = serializers.CharField(default=uuid4, read_only=True)
 
-class ServiceProviderRegistrationSerializer(serializers.Serializer):
+class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
@@ -89,6 +81,8 @@ class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
         business_profile["user"] = validated_data["user"] = user = User.objects.filter(id=validated_data["user"]).first()
 
         user.set_password(validated_data.pop("password"))
+
+        user.save()
 
         business_profile["business_name"] = validated_data.pop('business_name')
         service_category = validated_data.pop('service_category')
@@ -242,3 +236,12 @@ class TestImageUploadSerializer(serializers.ModelSerializer):
         model = TestImageUpload
         fields = ["name", "image1", "image2", "image3"]
 
+class StateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = State
+        fields = "__all__"
+
+class LgaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lga
+        fields = "__all__"

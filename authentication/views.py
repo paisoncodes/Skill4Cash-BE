@@ -26,7 +26,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from .models import BusinessProfile, Category, TestImageUpload, User, UserProfile
 from .serializers import (
     ChangePasswordSerializer,
-    CustomerRegistrationSerializer,
+    CustomerProfileSetUpSerializer,
     LoginSerializer,
     ResendTokenSerializer,
     SendPhoneOtpSerializer,
@@ -34,29 +34,27 @@ from .serializers import (
     UserBusinessProfileSerializer,
     UserBusinessProfileViewSerializer,
     UserProfileViewSerializer,
+    UserRegistrationSerializer,
     VerifyPhoneOtpSerializer,
     VerifyTokenSerializer,
     TestImageUploadSerializer,
     UserProfileSerializer,
-    ServiceProviderRegistrationSerializer,
 )
 
 path = os.path.join(BASE_DIR, 'authentication')
 
-class RegisterCustomer(GenericAPIView):
-    serializer_class = CustomerRegistrationSerializer
+class SetUpCustomerProfile(GenericAPIView):
+    serializer_class = CustomerProfileSetUpSerializer
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        data = request.data
+        data["user"] = request.user.id
+        serializer = self.serializer_class(data=data)
         if serializer.is_valid():
-            user = serializer.save()
-            otp = get_otp(user)
-            subject = "Please Verify Your Email"
-            message = f"Your Aquiline Alerts code is {otp}."
-            # send_mail(user.email, subject=subject, body=message)
-            data = {'message': "User account creation successful", 'otp': otp}
-            return api_response("Registration successful", data, True, 201)
+            profile = serializer.save()
+            data = UserProfileSerializer(profile)
+            return api_response("Profile Updated", data.data, True, 201)
         return api_response("Registration failed", serializer.errors, False, 400)
 
 class ProfileRetrieveUpdateView(GenericAPIView):
@@ -80,17 +78,17 @@ class ProfileRetrieveUpdateView(GenericAPIView):
         return api_response("Profile updated", serializer.data, True, 202)
 
 
-class RegisterServiceProvider(GenericAPIView):
-    serializer_class = ServiceProviderRegistrationSerializer
+class RegisterUser(GenericAPIView):
+    serializer_class = UserRegistrationSerializer
     permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            user = User.objects.create_user(**serializer.data, password="newsp")
+            user = User.objects.create_user(**serializer.data, password="new_user")
             otp = get_otp(user)
             subject = "Please Verify Your Email"
-            message = f"Your Aquiline Alerts code is {otp}."
+            message = f"Your Skill4Cash code is {otp}."
             # send_mail(user.email, subject=subject, body=message)
             data = {'message': "User account creation successful", 'otp': otp}
             return api_response("Registration successful", data, True, 201)
