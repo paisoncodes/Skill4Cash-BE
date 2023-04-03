@@ -6,8 +6,6 @@ from utils.models import BaseModel, Category, Keyword, Lga, State
 from django.utils.translation import gettext_lazy as _
 
 
-
-
 def images_default_value():
     return [{"url": "", "id": ""}]
 
@@ -25,7 +23,6 @@ class User(AbstractUser, BaseModel):
 
     def __str__(self):
         return f"{self.email}"
-
 
 class UserProfile(BaseModel):
 
@@ -54,8 +51,6 @@ class UserProfile(BaseModel):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
-    
-
 class BusinessProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="business_profile")
     business_name = models.CharField(max_length=200, unique=True)
@@ -70,7 +65,6 @@ class BusinessProfile(BaseModel):
 
     def __str__(self):
         return f"{self.business_name}"
-
 
 class BusinessGallery(models.Model):
     business = models.ForeignKey(BusinessProfile, on_delete=models.CASCADE)

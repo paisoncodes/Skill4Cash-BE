@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     "authentication.apps.AuthConfig",
     "services",
     'social_auth',
-    # "chat",
+    "chat",
     "cloudinary",
     'utils',
 ]
