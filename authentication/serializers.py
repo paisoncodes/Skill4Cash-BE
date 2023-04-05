@@ -25,7 +25,6 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_picture",
         )
 
-
 class CustomerProfileSetUpSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
     password = serializers.CharField(write_only=True)
@@ -49,14 +48,12 @@ class CustomerProfileSetUpSerializer(serializers.ModelSerializer):
 
         return profile
 
-
 class PhotoSerializer(serializers.Serializer):
     url = serializers.URLField(required=False)
     id = serializers.CharField(default=uuid4, read_only=True)
 
 class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
-
 
 class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField()
@@ -181,6 +178,7 @@ class UserBusinessProfileSerializer(serializers.ModelSerializer):
         
     def get_user_email(self, instance):
         return instance.user.email
+
 class UserBusinessProfileSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(
         read_only=True, method_name="get_user_email"
@@ -200,24 +198,24 @@ class UserBusinessProfileSerializer(serializers.ModelSerializer):
     def get_user_email(self, instance):
         return instance.user.email
 
-
 class VerifyTokenSerializer(serializers.Serializer):
     code = serializers.IntegerField()
     email = serializers.EmailField()
 
-class LoginSerializer(serializers.Serializer):
+class CustomLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
     user_type = serializers.CharField()
 
+    class Meta:
+        fields = ['email', 'password', 'user_type']
+
 class ResendTokenSerializer(serializers.Serializer):
     email = serializers.EmailField()
-
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
-
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField()

@@ -12,7 +12,7 @@ def images_default_value():
 class User(AbstractUser, BaseModel):
     email = models.EmailField(_("email address"), unique=True)
     username = models.CharField(
-        max_length=100, default="Username", blank=True, null=True
+        max_length=100, default='Username', blank=True, null=True
     )
     email_verified = models.BooleanField(default=False)
 

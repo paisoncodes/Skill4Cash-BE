@@ -5,6 +5,9 @@ from typing import Optional, Any
 from django.db.models import Q
 from django.db import models
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import json
 
 def upload_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/chat/file_type/<filename>
@@ -25,7 +28,7 @@ class UploadedFile(models.Model):
     def __str__(self):
         return str(self.id)
 
-class Conversation(models.Model):
+class Conversation(BaseModel):
     user_one = models.ForeignKey(
         UserProfile, 
         related_name='conversation_user_one',
@@ -49,7 +52,7 @@ class Conversation(models.Model):
     @staticmethod
     def conversation_exists(user1: UserProfile, user2: UserProfile) -> Optional[Any]:
         return Conversation.objects.filter(
-                Q(user_one=user1, user_two=user2) |   Q(user_one=user2, user_two=user1)
+                Q(user_one=user1, user_two=user2) | Q(user_one=user2, user_two=user1)
             ).first()
 
     @staticmethod
@@ -57,6 +60,7 @@ class Conversation(models.Model):
         response = Conversation.conversation_exists(user1, user2)
         if not response:
             return Conversation.objects.create(user_one=user1, user_two=user2)
+        return response
 
 class ChatMessage(BaseModel):
     conversation = models.ForeignKey(
@@ -68,13 +72,6 @@ class ChatMessage(BaseModel):
         on_delete=models.CASCADE,
         verbose_name="Author",
         related_name='from_user',
-        db_index=True
-    )
-    recipient = models.ForeignKey(
-        UserProfile,
-        on_delete=models.CASCADE,
-        verbose_name="Recipient",
-        related_name='to_user',
         db_index=True
     )
     chats = models.TextField(
@@ -92,14 +89,10 @@ class ChatMessage(BaseModel):
 
 
     class Meta:
-        ordering = ('-date_created',)
+        ordering = ('date_created',)
 
     def __str__(self):
-        return str(self.pk)
-
-    def save(self, *args, **kwargs):
-        super(Message, self).save(*args, **kwargs)
-        Conversation.create_if_not_exists(self.sender, self.recipient)
+        return f"{self.chats}"
 
 class Notification(BaseModel):
 
@@ -112,15 +105,23 @@ class Notification(BaseModel):
         on_delete=models.CASCADE, 
         related_name='user_notifications'
     )
-    meessage = models.TextField(blank=True, null=True)
-    title = models.CharField(max_length=100, null=True, blank=True)
+    message = models.TextField(
+        default='Messages',
+        blank=False,
+        null=False 
+    )
+    title = models.CharField(
+        default="Title",
+        max_length=100, 
+        blank=False, 
+        null=False
+    )
     platform = models.CharField(
         max_length=20, 
         choices=MobleDevice.choices, 
         default=MobleDevice.ANDRIOD_DEVICE
     )
     token = models.TextField(blank=True, null=True)
-    is_read = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-date_created']
@@ -132,6 +133,19 @@ class Notification(BaseModel):
     def __str__(self) -> str:
         return self.title
 
-
-
+    def save(self, *args, **kwargs):
+        super(Notification, self).save(*args, **kwargs)
+        data = {
+            "reciever_id": str(self.reciever.id),
+            "message":self.message,
+            "title": self.title
+        }
+        channel_layer = get_channel_layer()
+        user = str(self.reciever.user_id)
+        async_to_sync(channel_layer.group_send)(
+                'notify', {
+                    'type': 'send_notification',
+                    'notifications': json.dumps(data)
+                }
+            )
 
