@@ -51,7 +51,7 @@ class Conversation(BaseModel):
 
     @staticmethod
     def conversation_exists(user1: UserProfile, user2: UserProfile) -> Optional[Any]:
-        return Conversation.objects.filter(
+        return Conversation.objects.select_related('user_one__user', 'user_two__user').filter(
                 Q(user_one=user1, user_two=user2) | Q(user_one=user2, user_two=user1)
             ).first()
 
@@ -89,10 +89,22 @@ class ChatMessage(BaseModel):
 
 
     class Meta:
-        ordering = ('date_created',)
+        ordering = ('-date_created',)
 
     def __str__(self):
         return f"{self.chats}"
+    
+    def create_file(self, sender=None, media=None, caption=None, conversation_id=None, file_type=None):
+        try:
+            file = UploadedFile.objects.create(
+                media=media, caption=caption, file_type=file_type)
+            con = Conversation.objects.select_related(
+                "user_one__user", "user_two__user").get(id=conversation_id)
+            return ChatMessage.objects.create(
+                conversation=con, sender=sender, file=file
+            )
+        except:
+            return None
 
 class Notification(BaseModel):
 
@@ -141,7 +153,6 @@ class Notification(BaseModel):
             "title": self.title
         }
         channel_layer = get_channel_layer()
-        user = str(self.reciever.user_id)
         async_to_sync(channel_layer.group_send)(
                 'notify', {
                     'type': 'send_notification',

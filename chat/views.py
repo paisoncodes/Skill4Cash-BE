@@ -1,10 +1,17 @@
-from . serializers import ConversationSerializer, ChatMessageSerializer, NotificationSerializer
-from . models import Conversation, ChatMessage, Notification
+from . serializers import (
+    ConversationSerializer, 
+    ChatMessageSerializer, 
+    NotificationSerializer, 
+    FileSerializer
+)
+from . models import Conversation, ChatMessage, Notification, UploadedFile
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from authentication.models import UserProfile
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework import status
+from django.db.models import Q
 
 class Chat(generics.GenericAPIView):
     serializer_class = ConversationSerializer
@@ -41,8 +48,11 @@ class RecentDmList(generics.GenericAPIView):
     permission_classes = [ IsAuthenticated ]
 
     def get(self, request, user_id):  
-        recent_dms = ChatMessage.objects.select_related("conversation","sender__user","file")\
-                    .filter(sender__id=user_id).order_by('-date_created')
+        
+        con = Conversation.objects.select_related('user_one__user', 'user_two__user').filter(
+                Q(user_one__id=user_id) | Q(user_two__id=user_id)).first()
+        recent_dms = ChatMessage.objects.select_related(
+                    "conversation","sender__user","file").filter(conversation=con)
 
         conversation_ids = []
         recent_chats = []
@@ -54,11 +64,35 @@ class RecentDmList(generics.GenericAPIView):
                     conversation_ids.append(_.conversation_id)
             messages = ChatMessage.objects.\
                         select_related("conversation","sender__user","file")\
-                        .filter(id__in=recent_chats).order_by("-date_created")
+                        .filter(id__in=recent_chats)
 
             serializer = ChatMessageSerializer(messages, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"message":'No Chats Yet'},status=status.HTTP_200_OK)
+
+class File(generics.GenericAPIView):
+    queryset = UploadedFile.objects.all()
+    serializer_class = FileSerializer
+    permission_classes = [ IsAuthenticated ]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            profile = UserProfile.objects.get(user=request.user)
+
+            media = serializer.validated_data.get('media')
+            caption = serializer.validated_data.get('caption')
+            file_type = serializer.validated_data.get('file_type')
+            conversation_id = serializer.validated_data.get('conversation_id')
+
+            if files := ChatMessage.create_file(self, sender=profile,
+                            media=media, conversation_id=conversation_id,
+                            file_type=file_type, caption=caption):
+                serializer = ChatMessageSerializer(files, many=False)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({"message":'Invalid ID'},status=status.HTTP_404_NOT_FOUND)
 
 class NotificationListAPIView(generics.ListAPIView):
     queryset = Notification.objects.select_related("reciever__user").all()
@@ -86,6 +120,7 @@ class NotificationForUserListAPIView(generics.GenericAPIView):
         return Response({"message":'No Chats Yet'}, status=status.HTTP_200_OK)
         
 chat = Chat.as_view()
+file = File.as_view()
 chat_list_con = ChatByConversationListAPIView.as_view()
 chat_recent_dms = RecentDmList.as_view()
 notify_list = NotificationListAPIView.as_view()
