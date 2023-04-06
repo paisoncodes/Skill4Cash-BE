@@ -16,11 +16,13 @@ from .views import (
 
 from chat.views import(
     chat,
+    file,
     chat_list_con,
     chat_recent_dms,
     notify_list,
     notify_detail,
     notify_by_user,
+
 
 )
 from social_auth.views import(
@@ -42,6 +44,7 @@ urlpatterns = [
     path("setup-business-profile/", SetUpServiceProviderProfile.as_view()),
     path("google-auth/", GoogleSocialAuthView.as_view()),
     path("chats-create/<str:other_user_id>/", chat),
+    path("chatsfile-create/", file),
     path("chats-conversation/<str:conversation>/", chat_list_con),
     path("chats-recent/<str:user_id>/",chat_recent_dms),
     path("notifications/", notify_list),
