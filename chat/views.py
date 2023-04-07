@@ -49,10 +49,11 @@ class RecentDmList(generics.GenericAPIView):
 
     def get(self, request, user_id):  
         
-        con = Conversation.objects.select_related('user_one__user', 'user_two__user').filter(
-                Q(user_one__id=user_id) | Q(user_two__id=user_id)).first()
+        con = set(Conversation.objects.select_related('user_one__user', 'user_two__user')\
+                .filter(Q(user_one__id=user_id) | Q(user_two__id=user_id))\
+                .values_list('id', flat=True))
         recent_dms = ChatMessage.objects.select_related(
-                    "conversation","sender__user","file").filter(conversation=con)
+                    "conversation","sender__user","file").filter(conversation_id__in=con)
 
         conversation_ids = []
         recent_chats = []
