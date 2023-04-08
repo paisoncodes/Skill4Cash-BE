@@ -38,6 +38,8 @@ ALLOWED_HOSTS = ["*", "skills4cash-be.herokuapp.com"]
 # Application definition
 
 INSTALLED_APPS = [
+    # Daphne should be before contrib.admin
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,7 +47,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    
     # installed apps
+    "authentication.apps.AuthConfig",
+    "services",
+    'social_auth',
+    'utils',
+    "chat",
+
+    # external apps
     "phonenumber_field",
     "rest_framework",
     "rest_framework_simplejwt",
@@ -53,12 +63,8 @@ INSTALLED_APPS = [
     "dj_rest_auth",
     "rest_framework.authtoken",
     "corsheaders",
-    "authentication.apps.AuthConfig",
-    "services",
-    'social_auth',
-    # "chat",
+    "channels",
     "cloudinary",
-    'utils',
 ]
 
 SITE_ID = 1
@@ -109,13 +115,20 @@ REST_FRAMEWORK = {
     ]
 }
 
-# ASGI_APPLICATION = "src.asgi.application"
-WSGI_APPLICATION = "src.wsgi.application"
+ASGI_APPLICATION = "src.asgi.application"
+# WSGI_APPLICATION = "src.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 DATABASES = {
     "default": {
@@ -128,7 +141,7 @@ DATABASES = {
     }
 }
 
-DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
+# DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -232,12 +245,12 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 SOCIAL_SECRET = config('SOCIAL_SECRET')
 
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [(config("REDIS_HOST"), config("REDIS_PORT", cast=int))],
-#         },
-#     },
-# }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config("REDIS_URL")],
+        },
+    },
+}
 

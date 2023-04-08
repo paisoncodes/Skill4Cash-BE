@@ -27,7 +27,7 @@ from .models import BusinessProfile, Category, TestImageUpload, User, UserProfil
 from .serializers import (
     ChangePasswordSerializer,
     CustomerProfileSetUpSerializer,
-    LoginSerializer,
+    CustomLoginSerializer,
     ResendTokenSerializer,
     SendPhoneOtpSerializer,
     ServiceProviderProfileSetUpSerializer,
@@ -76,7 +76,6 @@ class ProfileRetrieveUpdateView(GenericAPIView):
             return api_response("ERROR", serializer.errors, False, 400)
         serializer.update(instance=profile, validated_data=serializer.validated_data)
         return api_response("Profile updated", serializer.data, True, 202)
-
 
 class RegisterUser(GenericAPIView):
     serializer_class = UserRegistrationSerializer
@@ -144,10 +143,9 @@ class BusinessProfileRetrieveUpdateView(GenericAPIView):
         serializer.update(instance=profile, validated_data=serializer.validated_data)
         return api_response("Profile updated", serializer.data, True, 202)
     
-
 class Login(GenericAPIView):
     permission_classes = [AllowAny]
-    serializer_class = LoginSerializer
+    serializer_class = CustomLoginSerializer
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -157,6 +155,7 @@ class Login(GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         data = serializer.data
+
         try:
             user = User.objects.get(email=data["email"])
         except User.DoesNotExist:
@@ -278,7 +277,6 @@ class ResendOtp(GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
 class VerifyPhoneNumberOtp(GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = VerifyPhoneOtpSerializer
@@ -307,7 +305,6 @@ class VerifyPhoneNumberOtp(GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
 class SendPhoneNumberOtp(GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SendPhoneOtpSerializer
@@ -335,7 +332,6 @@ class SendPhoneNumberOtp(GenericAPIView):
             {"message": "OTP sent to phone number", "status": True},
             status=status.HTTP_200_OK,
         )
-
 
 class ChangePassword(GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -368,7 +364,6 @@ class ChangePassword(GenericAPIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
-
 
 class TestImageUploadView(APIView):
     queryset = TestImageUpload.objects.all()
