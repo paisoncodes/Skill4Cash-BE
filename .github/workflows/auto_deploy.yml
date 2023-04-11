@@ -40,6 +40,7 @@ jobs:
           envkey_POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
           envkey_POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
           envkey_DB_ENGINE: ${{ secrets.DB_ENGINE }}
+          envkey_REDIS_URL: ${{ secrets.REDIS_URL }}
 
           file_name: .env
           fail_on_empty: false
