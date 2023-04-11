@@ -122,15 +122,6 @@ ASGI_APPLICATION = "src.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-<<<<<<< HEAD
-=======
-prod_db = dj_database_url.config(conn_max_age=500)
-PRODUCTION = config("PRODUCTION", cast=bool)
-if PRODUCTION:
-    DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'), conn_max_age=600),
-}
->>>>>>> 1eb3b4798e55a2dbe5f6c91c32efb420749ef734
 
 # DATABASES = {
 #     'default': {
