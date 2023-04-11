@@ -1,0 +1,62 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          clean: false
+
+      - name: Generate .env file
+        uses: SpicyPizza/create-envfile@v1.3
+        with:
+          envkey_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          envkey_DEBUG: ${{ secrets.DEBUG }}
+          envkey_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          envkey_HTTP: ${{ secrets.HTTP }}
+          envkey_TO: ${{ secrets.TO }}
+          envkey_ACCOUNT_SID: ${{ secrets.ACCOUNT_SID }}
+          envkey_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          envkey_MESSAGE_SERVICE: ${{ secrets.MESSAGE_SERVICE }}
+          envkey_AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          envkey_SENDER: ${{ secrets.SENDER }}
+          envkey_RECIPIENT: ${{ secrets.RECIPIENT }}
+          envkey_CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          envkey_CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          envkey_CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          envkey_EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          envkey_EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          envkey_SOCIAL_SECRET: ${{ secrets.SOCIAL_SECRET }}
+          envkey_POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          envkey_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          envkey_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          envkey_POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          envkey_POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+          envkey_DB_ENGINE: ${{ secrets.DB_ENGINE }}
+
+          file_name: .env
+          fail_on_empty: false
+
+      - name: Build Docker images
+        run: |
+          docker compose build --force-rm --no-cache
+          docker compose run --rm skill4cash-api python manage.py makemigrations --no-input
+          docker compose run --rm skill4cash-api python manage.py migrate
+
+  run:
+    runs-on: self-hosted
+
+    needs:
+      - build
+
+    steps:
+      - name: Run Docker images
+        run: |
+          docker compose up -d --force-recreate --remove-orphans
