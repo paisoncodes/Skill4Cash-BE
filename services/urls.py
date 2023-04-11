@@ -8,8 +8,6 @@ from .views import (
     ReadSPSchedules,
     ReadUpdateDeleteSchedule,
 
-    PopulateData,
-
 )
 
 urlpatterns = [
@@ -20,5 +18,4 @@ urlpatterns = [
     path("sp/schedules/", ReadSPSchedules.as_view(), name='sp_schedule-list'),
     path("sp/schedules/<str:id>/",
          ReadUpdateDeleteSchedule.as_view(), name='sch_sp-detail'),
-    path('populate-sch-cat/', PopulateData.as_view()),
 ]
