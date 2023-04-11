@@ -18,10 +18,21 @@ services:
       - 5434
     command: -p 5434
     restart: always
+  
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - cache:/var/lib/redis/data
+    expose:
+      - 6379
     
   skill4cash-api:
     build: .
-    command: gunicorn --bind 0.0.0.0:8000 src.wsgi --log-file -
+    command: sh server-entry.sh
     volumes:
       - .:/app
     ports:
@@ -32,5 +43,8 @@ services:
 
     depends_on:
       - db
+      - cache
 volumes: 
   postgres_data:
+  cache:
+    driver: local

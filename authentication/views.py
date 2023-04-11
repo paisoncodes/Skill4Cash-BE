@@ -1,27 +1,17 @@
-from drf_yasg import openapi
-import jwt
 import json
 import os
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django.conf import settings
-from django.contrib.auth import authenticate
-from django.shortcuts import get_list_or_404, get_object_or_404
-from django.urls import reverse
 from rest_framework import status
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
-from authentication.utility import get_user, update_customer, update_service_provider
 from services.serializers import CategorySerializer
-from src.permissions import IsOwnerOrReadOnly
-from src.settings import BASE_DIR, HTTP
+from src.settings import BASE_DIR
 from utils.otp import get_otp, verify_otp
-from utils.utils import AuthUtil, UploadUtil, api_response, validate_phone_number
+from utils.utils import UploadUtil, api_response, validate_phone_number
 from drf_yasg.utils import swagger_auto_schema
-from decouple import config
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password, make_password
+from rest_framework.response import Response
 
 from .models import BusinessProfile, Category, TestImageUpload, User, UserProfile
 from .serializers import (
@@ -150,19 +140,13 @@ class Login(GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if not serializer.is_valid():
-            return Response(
-                {"message": serializer.errors, "status": False},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return api_response("ERROR", serializer.errors, False, 400)
         data = serializer.data
 
         try:
             user = User.objects.get(email=data["email"])
         except User.DoesNotExist:
-            return Response(
-                {"message": "email or password is incorrect", "status": False},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            return api_response("Email or Password is incorrect", {}, False, 400)
         user_profile = UserProfile.objects.filter(user=user).first()
         if user_profile.user_type.lower() != (data["user_type"]).lower():
             return api_response("Invalid login", {}, False, 400)
@@ -365,7 +349,7 @@ class ChangePassword(GenericAPIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-class TestImageUploadView(APIView):
+class TestImageUploadView(GenericAPIView):
     queryset = TestImageUpload.objects.all()
     serializer_class = TestImageUploadSerializer
 
@@ -385,7 +369,7 @@ class TestImageUploadView(APIView):
         else:
             return api_response("Test failed", 400, "Failed", serializer.errors)
 
-class PopulateCategory(APIView):
+class PopulateCategory(GenericAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     def get(self, request):
