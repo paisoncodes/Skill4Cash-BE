@@ -1,13 +1,13 @@
-name: Deploy To Test Server
+name: Deploy To Production Server
 
 on:
   push:
     branches:
-      - dev
+      - main
 
 jobs:
   build:
-    runs-on: uat-server
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
@@ -52,7 +52,7 @@ jobs:
           docker compose run --rm skill4cash-api python manage.py migrate
 
   run:
-    runs-on: uat-server
+    runs-on: self-hosted
 
     needs:
       - build
