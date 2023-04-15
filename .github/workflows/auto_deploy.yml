@@ -52,7 +52,7 @@ jobs:
           docker compose run --rm skill4cash-api python manage.py migrate
 
   run:
-    runs-on: self-hosted
+    runs-on: uat-server
 
     needs:
       - build
