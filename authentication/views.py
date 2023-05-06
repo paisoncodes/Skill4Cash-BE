@@ -3,6 +3,8 @@ import os
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import GenericAPIView
@@ -388,10 +390,26 @@ class PopulateCategory(GenericAPIView):
         serializer = self.serializer_class(Category.objects.all(), many=True)
         return api_response("Categories uploaded successfully", 201, "Success", serializer.data)
 
+
+response_schema_dict = {
+"201": openapi.Response(
+    description="Image(s) uploaded",
+    examples={
+        "application/json": {
+            "urls": [""],
+        }
+    }
+)
+}
+
 class UploadPictures(GenericAPIView):
     serializer_class = ImageSerializer
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        responses=response_schema_dict
+    )
     def post(self, request, filetype):
         name = request.user.get("email") if request.user.is_authenticated else ""
         if filetype.upper() not in [settings.GALLERY, settings.PROFILE_PICTURE, settings.DOCUMENT]:
@@ -408,5 +426,5 @@ class UploadPictures(GenericAPIView):
                     url = (UploadUtil.upload_profile_picture(image, email=name))["image_url"]
                 else:
                     pass
-            return api_response("Pictures created", {"urls": image_urls}, True, 200)
-        return api_response("Pictures created", {}, False, 400)
+            return api_response("Image(s) uploaded", {"urls": image_urls}, True, 201)
+        return api_response("Error", serializer.errors, False, 400)
