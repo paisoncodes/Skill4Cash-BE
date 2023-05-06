@@ -1,4 +1,4 @@
-from src.utils import api_response
+from utils.utils import api_response
 from .serializers import RatingSerializer, CategorySerializer, ScheduleSerializer
 
 from .models import Rating, Schedule
@@ -65,7 +65,6 @@ class ReadSPReviews(APIView):
 
 
 class CreateReadCategory(APIView):
-    permission_classes = (IsAuthenticated,)
     serializer_class = CategorySerializer
     category = Category.objects.all()
 
@@ -201,37 +200,3 @@ class ReadUpdateDeleteSchedule(APIView):
             {"error": "Instance of User does not exist"},
             status=status.HTTP_404_NOT_FOUND,
         )
-
-
-# function to populate
-
-
-class PopulateData(APIView):
-
-    permission_classes = (AllowAny,)
-
-    def get(self, request):
-
-        name = "Electrician FashionDesigner WebDeveloper Marketer Contentwriter".split()
-        title = "Meeting Advert Picnic Social Outing".split()
-        service_provider = User.objects.filter(role="service_provider")
-        customer = User.objects.filter(role="customer")
-        rating = [x for x in range(10)]
-
-        if not Category.objects.all():
-            for x in range(1, 11):
-                Category.objects.create(name=f"{choice(name)} {x}")
-                Rating.objects.create(
-                    service_provider=choice(service_provider),
-                    rating=choice(rating),
-                    review="This is good :)",
-                    customer=choice(customer),
-                )
-                Schedule.objects.create(
-                    title=choice(title),
-                    service_provider=choice(service_provider),
-                    customer=choice(customer),
-                    date_and_time=timezone.now(),
-                    detail="Keep on update on all upcoming schedules",
-                )
-        return Response({"message": "Data populated sucessfully"})

@@ -1,11 +1,7 @@
+from uuid import uuid4
 from rest_framework import serializers
-from rest_framework.reverse import reverse
-from rest_framework.validators import UniqueValidator
-
-from services.serializers import CategorySerializer
-from .models import TestImageUpload, User
-from phonenumber_field.modelfields import PhoneNumberField
-from src.utils import AuthUtil
+from utils.models import Category, Keyword, Lga, State
+from .models import BusinessProfile, TestImageUpload, User, UserProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,279 +19,241 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_picture",
         )
 
-
-class CustomerRegistrationSerializer(serializers.ModelSerializer):
-    phone_number = PhoneNumberField(unique=True)
-    email = serializers.EmailField(
-        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
-    )
-    password = serializers.CharField(
-        write_only=True,
-        required=True,
-        validators=[AuthUtil.validate_user_password],
-        help_text=""" Password must be at least 8 characters 
-                        and must contain at least one uppercase letter, 
-                        one smaller letter, one digit, and one special character.
-                    """,
-    )
-    confirm_password = serializers.CharField(write_only=True, required=True)
-    verified = serializers.SerializerMethodField(read_only=True)
-    fullname = serializers.SerializerMethodField(read_only=True)
+class CustomerProfileSetUpSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    state = serializers.CharField()
+    lga = serializers.CharField()
+    user = serializers.UUIDField()
 
     class Meta:
-        model = User
-        fields = (
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "phone_number",
-            "password",
-            "profile_picture",
-            "confirm_password",
-            "state",
-            "city",
-            "verified",
-            "email_verification",
-            "phone_verification",
-            "role",
-            "fullname",
-        )
-        extra_kwargs = {
-            "first_name": {"required": True},
-            "last_name": {"required": True},
-        }
-        read_only_fields = [
-            "id",
-            "verified",
-            "role",
-            "email_verification",
-            "phone_verification",
-            "fullname",
-        ]
-
-    def validate(self, attrs):
-        if attrs["password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError(
-                {"Password": "Password fields didn't match."}
-            )
-        return attrs
-
+        model = UserProfile
+        fields = ["first_name", "last_name", "state", "lga", "phone_number", "password", "user"]
+    
     def create(self, validated_data):
-        del validated_data["confirm_password"]
-        user = User.objects.create_user(**validated_data, role="customer")
-        return user
+        validated_data["user"] = user = User.objects.filter(id=validated_data["user"]).first()
+        validated_data["user_type"] = UserProfile.UserType.CUSTOMER
 
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
+        user.set_password(validated_data.pop("password"))
 
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
+        profile = UserProfile.objects.create(**validated_data)
+
+        return profile
+
+class PhotoSerializer(serializers.Serializer):
+    url = serializers.URLField(required=False)
+    id = serializers.CharField(default=uuid4, read_only=True)
 
 
-class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
-    phone_number = PhoneNumberField(unique=True)
-    email = serializers.EmailField(
-        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
-    )
-    password = serializers.CharField(
-        write_only=True,
-        required=True,
-        validators=[AuthUtil.validate_user_password],
-        help_text=""" Password must be at least 8 characters 
-                        and must contain at least one uppercase letter, 
-                        one smaller letter, one digit, and one special character.
-                    """,
-    )
-    confirm_password = serializers.CharField(write_only=True, required=True)
-    verified = serializers.SerializerMethodField(read_only=True)
-    fullname = serializers.SerializerMethodField(read_only=True)
+class UploadPictureSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    
+class UserRegistrationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
-    service_category = CategorySerializer()
+class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    state = serializers.CharField()
+    lga = serializers.CharField()
+    business_name = serializers.CharField()
+    service_category = serializers.CharField()
+    gallery_photos = serializers.ListField(child=PhotoSerializer(), required=False)
+    keywords = serializers.ListField(child=serializers.CharField())
+    description = serializers.CharField()
+    user = serializers.UUIDField(required=False)
 
     class Meta:
-        model = User
-        fields = (
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "phone_number",
-            "password",
-            "confirm_password",
-            "state",
-            "profile_picture",
-            "service_category",
-            "city",
-            "verified",
-            "gallery",
-            "email_verification",
-            "phone_verification",
-            "role",
-            "fullname",
-            "business_name",
-            "is_verified_business",
-        )
-        extra_kwargs = {
-            "first_name": {"required": True},
-            "last_name": {"required": True},
-            "business_name": {"required": True},
-        }
-        read_only_fields = [
-            "verified",
-            "gallery",
-            "role",
-            "fullname",
-            "email_verification",
-            "phone_verification",
-            "is_verified_business",
-        ]
-
-    def validate(self, attrs):
-        if attrs["password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError(
-                {"Password": "Password fields didn't match."}
-            )
-        return attrs
-
+        model = UserProfile
+        fields = ["first_name", "last_name", "state", "lga", "profile_picture", "phone_number", "password", "business_name", "service_category", "gallery_photos", "keywords", "description", "user"]
+    
     def create(self, validated_data):
-        del validated_data["confirm_password"]
-        user = User.objects.create_user(**validated_data, role="service_provider")
-        return user
+        business_profile = {}
+        business_profile["user"] = validated_data["user"] = user = User.objects.filter(id=validated_data["user"]).first()
 
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
+        user.set_password(validated_data.pop("password"))
 
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
+        user.save()
 
+        business_profile["business_name"] = validated_data.pop('business_name')
+        service_category = validated_data.pop('service_category')
+        category, created = Category.objects.get_or_create(name=service_category)
+        business_profile["service_category"] = category
+        business_profile["gallery"] = validated_data.pop('gallery_photos')
+        keywords = validated_data.pop('keywords')
+        business_profile["description"] = validated_data.pop('description')
+        validated_data["state"] = State.objects.get(state__iexact=validated_data['state'])
+        validated_data["lga"] = Lga.objects.get(lga__iexact=validated_data['lga'])
+        validated_data["user_type"] = UserProfile.UserType.SERVICE_PROVIDER
 
-class CustomerSerializer(serializers.ModelSerializer):
-    verified = serializers.SerializerMethodField(read_only=True)
-    fullname = serializers.SerializerMethodField(read_only=True)
+        profile, created = UserProfile.objects.get_or_create(**validated_data)
+
+        business, created = BusinessProfile.objects.get_or_create(**business_profile)
+
+        for keyword in keywords:
+            word, created = Keyword.objects.get_or_create(keyword=keyword)
+            business.keywords.add(word)
+        business.save()
+
+        
+
+        return profile
+
+class ImageSerializer(serializers.Serializer):
+    files = serializers.ImageField(write_only=True, required=False)
+    class Meta:
+        fields = (
+            "files",
+        )
+
+    def __init__(self, *args, **kwargs):
+        image_fields = kwargs.pop('images', None)
+        super().__init__(*args, **kwargs)
+
+        if image_fields:
+            image_update_dict = {
+                _: serializers.ImageField(required=False, write_only=True) for _ in image_fields
+            }
+            self.fields.update(**image_update_dict)
+class UserProfileSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
 
     class Meta:
-        model = User
-        fields = (
+        model = UserProfile
+        exclude = (
+            "user",
             "id",
-            "email",
-            "first_name",
-            "last_name",
-            "state",
-            "city",
-            "profile_picture",
-            "verified",
-            "email_verification",
-            "phone_verification",
-            "role",
-            "fullname",
+            "date_created",
+            "last_update"
         )
-        read_only_fields = [
-            "verified",
-            "role",
-            "fullname",
-            "email_verification",
-            "phone_verification",
-        ]
-
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
-
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
-
-
-class ServiceProviderSerializer(serializers.ModelSerializer):
-
-    verified = serializers.SerializerMethodField(read_only=True)
-    fullname = serializers.SerializerMethodField(read_only=True)
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+    
+class UserProfileViewSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    state = serializers.StringRelatedField()
+    lga = serializers.StringRelatedField()
 
     class Meta:
-        model = User
-        fields = (
+        model = UserProfile
+        exclude = (
+            "user",
             "id",
-            "email",
-            "first_name",
-            "last_name",
-            "state",
-            "city",
-            "business_name",
-            "service_category",
-            "profile_picture",
-            "keywords",
-            "gallery",
-            "card_front",
-            "card_back",
-            "pob",
-            "role",
-            "fullname",
-            "verified",
-            "email_verification",
-            "phone_verification",
-            "is_verified_business",
+            "date_created",
+            "last_update"
         )
-        extra_kwargs = {
-            "first_name": {"required": True},
-            "last_name": {"required": True},
-            "business_name": {"required": True},
-        }
-        read_only_fields = [
-            "verified",
-            "role",
-            "fullname",
-            "email_verification",
-            "phone_verification",
-            "is_verified_business",
-        ]
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+    
+class UserBusinessProfileViewSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    service_category = serializers.StringRelatedField()
+    keywords = serializers.StringRelatedField(many=True)
 
-    # def update(self, instance, validated_data):
-    #     if "gallery" in validated_data.keys():
+    class Meta:
+        model = BusinessProfile
+        exclude = (
+            "user",
+            "id",
+            "date_created",
+            "last_update"
+        )
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+    
+class UserBusinessProfileSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    service_category = serializers.StringRelatedField()
+    keywords = serializers.StringRelatedField(many=True)
 
-    #     return super().update(instance, validated_data)
-    def get_fullname(self, obj):
-        if hasattr(obj, "id"):
-            return obj.get_full_name()
-        return None
+    class Meta:
+        model = BusinessProfile
+        exclude = (
+            "user",
+            "id",
+            "date_created",
+            "last_update"
+        )
+        
+    def get_user_email(self, instance):
+        return instance.user.email
 
-    def get_verified(self, obj):
-        if hasattr(obj, "id"):
-            return obj.verified
-        return None
+class UserBusinessProfileSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField(
+        read_only=True, method_name="get_user_email"
+    )
+    service_category = serializers.StringRelatedField()
+    keywords = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = BusinessProfile
+        exclude = (
+            "user",
+            "id",
+            "date_created",
+            "last_update",
+        )
+        
+    def get_user_email(self, instance):
+        return instance.user.email
+
+class VerifyTokenSerializer(serializers.Serializer):
+    code = serializers.IntegerField()
+    email = serializers.EmailField()
+
+class CustomLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+    user_type = serializers.CharField()
+
+    class Meta:
+        fields = ['email', 'password', 'user_type']
+
+class ResendTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField()
+    new_password = serializers.CharField()
 
 
-class VerificationSerializer(serializers.Serializer):
-    otp = serializers.CharField(required=True, write_only=True)
+class SendPhoneOtpSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(help_text="Example: 2348012345678")
 
 
-class UpdatePhoneSerializer(serializers.Serializer):
-    otp = serializers.CharField(required=True, write_only=True)
-    number = serializers.CharField(required=True, write_only=True)
-
-
-class EmailLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=False)
-    phone_number = PhoneNumberField()
-    password = serializers.CharField(required=True)
-
-
-
-class TokenRefreshSerializer(serializers.Serializer):
-    refresh = serializers.CharField(required=True)
+class VerifyPhoneOtpSerializer(serializers.Serializer):
+    code = serializers.IntegerField()
 
 class TestImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestImageUpload
         fields = ["name", "image1", "image2", "image3"]
 
+class StateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = State
+        fields = "__all__"
+
+class LgaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lga
+        fields = "__all__"

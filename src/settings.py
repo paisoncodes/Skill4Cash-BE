@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
-import dj_database_url
-import django_heroku
 import os
 import cloudinary
 
@@ -32,12 +30,14 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", cast=bool)
 
 
-ALLOWED_HOSTS = ["*", "skills4cash-be.herokuapp.com"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    # Daphne should be before contrib.admin
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,18 +45,21 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    
     # installed apps
-    "phonenumber_field",
-    "rest_framework",
-    "rest_framework_simplejwt",
-    "drf_yasg",
-    "dj_rest_auth",
-    "rest_framework.authtoken",
-    "corsheaders",
     "authentication.apps.AuthConfig",
     "services",
     'social_auth',
-    # "chat",
+    'utils',
+    "chat",
+
+    # external apps
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "drf_yasg",
+    "rest_framework.authtoken",
+    "corsheaders",
+    "channels",
     "cloudinary",
 ]
 
@@ -108,34 +111,33 @@ REST_FRAMEWORK = {
     ]
 }
 
-# ASGI_APPLICATION = "src.asgi.application"
-WSGI_APPLICATION = "src.wsgi.application"
+ASGI_APPLICATION = "src.asgi.application"
+# WSGI_APPLICATION = "src.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-prod_db = dj_database_url.config(conn_max_age=500)
-HEROKU = config("HEROKU", cast=bool)
-if HEROKU:
-    DATABASES = {"default": prod_db}
-    db_from_env = dj_database_url.config(conn_max_age=0, ssl_require=False)
-    DATABASES["default"].update(db_from_env)
-    DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": config("DATABASE"),
-            "USER": config("USER_NAME"),
-            "PASSWORD": config("PASSWORD"),
-            "HOST": config("HOST"),
-            "PORT": config("PORT"),
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": config("DB_ENGINE"),
+        "NAME": config("POSTGRES_DB"),
+        "USER": config("POSTGRES_USER"),
+        "PASSWORD": config("POSTGRES_PASSWORD"),
+        "HOST": config("POSTGRES_HOST"),
+        "PORT": config("POSTGRES_PORT"),
     }
+}
 
+# DATABASES["default"].update({"DISABLE_SERVER_SIDE_CURSORS": True})
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -192,24 +194,19 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "relative_paths": False,
+    'displayOperationId': True,
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    },
+}
 
-# Activate Django-Heroku.
-django_heroku.settings(locals())
-
-# TWILIO CONFIG FILES
-ACCOUNT_SID = config("ACCOUNT_SID")
-AUTH_TOKEN = config("AUTH_TOKEN")
-MESSAGE_SERVICE = config("MESSAGE_SERVICE")
-TO = config("TO")
-
-# AMAZON SES CONFIG FILES
-AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
-AWS_SECRET_KEY = config("AWS_SECRET_KEY")
-CHARSET = "UTF-8"
-AWS_REGION = "us-east-1"
-SENDER = config("SENDER")
-RECIPIENT = config("RECIPIENT")
-
+PATH = os.path.join(BASE_DIR, 'authentication')
+GALLERY = "GALLERY"
+PROFILE_PICTURE = "PROFILE_PICTURE"
+DOCUMENT = "DOCUMENT"
 HTTP = config("HTTP")
 
 # Cloudinary configuration
@@ -225,17 +222,15 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 SOCIAL_SECRET = config('SOCIAL_SECRET')
 
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [(config("REDIS_HOST"), config("REDIS_PORT", cast=int))],
-#         },
-#     },
-# }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config("REDIS_URL")],
+        },
+    },
+}
 

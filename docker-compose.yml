@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:12
+    environment:
+      - DB_ENGINE=${DB_ENGINE}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5434:5434
+    expose:
+      - 5434
+    command: -p 5434
+    restart: always
+  
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - cache:/var/lib/redis/data
+    expose:
+      - 6379
+    
+  skill4cash-api:
+    build: .
+    command: sh server-entry.sh
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
+    restart: always
+
+    depends_on:
+      - db
+      - cache
+volumes: 
+  postgres_data:
+  cache:
+    driver: local

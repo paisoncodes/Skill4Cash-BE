@@ -1,0 +1,1 @@
+daphne src.asgi:application --port 9800 --bind 0.0.0.0
