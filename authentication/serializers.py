@@ -1,13 +1,7 @@
 from uuid import uuid4
 from rest_framework import serializers
-from rest_framework.reverse import reverse
-from rest_framework.validators import UniqueValidator
-
-from services.serializers import CategorySerializer
 from utils.models import Category, Keyword, Lga, State
 from .models import BusinessProfile, TestImageUpload, User, UserProfile
-from phonenumber_field.modelfields import PhoneNumberField
-from utils.utils import AuthUtil
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -52,6 +46,10 @@ class PhotoSerializer(serializers.Serializer):
     url = serializers.URLField(required=False)
     id = serializers.CharField(default=uuid4, read_only=True)
 
+
+class UploadPictureSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    
 class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -105,6 +103,22 @@ class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
 
         return profile
 
+class ImageSerializer(serializers.Serializer):
+    files = serializers.ImageField(write_only=True, required=False)
+    class Meta:
+        fields = (
+            "files",
+        )
+
+    def __init__(self, *args, **kwargs):
+        image_fields = kwargs.pop('images', None)
+        super().__init__(*args, **kwargs)
+
+        if image_fields:
+            image_update_dict = {
+                _: serializers.ImageField(required=False, write_only=True) for _ in image_fields
+            }
+            self.fields.update(**image_update_dict)
 class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField(
         read_only=True, method_name="get_user_email"
@@ -192,7 +206,7 @@ class UserBusinessProfileSerializer(serializers.ModelSerializer):
             "user",
             "id",
             "date_created",
-            "last_update"
+            "last_update",
         )
         
     def get_user_email(self, instance):

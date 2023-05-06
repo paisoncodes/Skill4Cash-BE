@@ -1,4 +1,3 @@
-from phonenumber_field.modelfields import PhoneNumberField
 from django.contrib.auth.models import AbstractUser
 from .manager import UserManager
 from django.db import models
@@ -8,6 +7,10 @@ from django.utils.translation import gettext_lazy as _
 
 def images_default_value():
     return [{"url": "", "id": ""}]
+
+
+def upload_to(instance, filename):
+    return 'images/{filename}'.format(filename=filename)
 
 class User(AbstractUser, BaseModel):
     email = models.EmailField(_("email address"), unique=True)
@@ -58,9 +61,9 @@ class BusinessProfile(BaseModel):
     service_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     keywords = models.ManyToManyField(Keyword)
     gallery = models.JSONField(default=images_default_value)
-    card_front = models.URLField(default=str)
-    card_back = models.URLField(default=str)
-    pob = models.URLField(verbose_name="Proof of Business", default=str)
+    card_front = models.ImageField(upload_to=upload_to, blank=True, null=True)
+    card_back = models.ImageField(upload_to=upload_to, blank=True, null=True)
+    pob = models.ImageField(upload_to=upload_to, blank=True, null=True, verbose_name="Proof of Business")
     is_verified_business = models.BooleanField(default=False)
 
     def __str__(self):

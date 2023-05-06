@@ -2,6 +2,8 @@ import json
 import os
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.conf import settings
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import GenericAPIView
 from services.serializers import CategorySerializer
@@ -18,6 +20,7 @@ from .serializers import (
     ChangePasswordSerializer,
     CustomerProfileSetUpSerializer,
     CustomLoginSerializer,
+    ImageSerializer,
     ResendTokenSerializer,
     SendPhoneOtpSerializer,
     ServiceProviderProfileSetUpSerializer,
@@ -31,7 +34,6 @@ from .serializers import (
     UserProfileSerializer,
 )
 
-path = os.path.join(BASE_DIR, 'authentication')
 
 class SetUpCustomerProfile(GenericAPIView):
     serializer_class = CustomerProfileSetUpSerializer
@@ -373,15 +375,38 @@ class PopulateCategory(GenericAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     def get(self, request):
-        with open(f"{path}/categories.json") as file:
+        with open(f"{settings.PATH}/categories.json") as file:
             categories = json.load(file)
         for key in categories.keys():
             category_name = "-".join(key.split("_"))
             name = " ".join(key.split("_"))
-            image_url = (UploadUtil.upload_category_image(f"{path}/{categories[key]}", category_name))["image_url"]
+            image_url = (UploadUtil.upload_category_image(f"{settings.PATH}/{categories[key]}", category_name))["image_url"]
             if Category.objects.filter(name=name).exists():
                 continue
             else:
                 Category.objects.create(name=name, image=image_url)
         serializer = self.serializer_class(Category.objects.all(), many=True)
         return api_response("Categories uploaded successfully", 201, "Success", serializer.data)
+
+class UploadPictures(GenericAPIView):
+    serializer_class = ImageSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [AllowAny]
+    def post(self, request, filetype):
+        name = request.user.get("email") if request.user.is_authenticated else ""
+        if filetype.upper() not in [settings.GALLERY, settings.PROFILE_PICTURE, settings.DOCUMENT]:
+            return api_response("Invalid filetype, '%s'" %filetype, {}, False, 400)
+        images = [x for x in request.FILES.keys()]
+        serializer = self.serializer_class(data=request.data, images=images)
+        if serializer.is_valid():
+            image_urls = []
+            for image in serializer.validated_data.values():
+                if filetype.upper() == settings.GALLERY:
+                    url = (UploadUtil.upload_gallery_image(image, business_name=name))
+                    image_urls.append(url)
+                elif filetype.upper() == settings.PROFILE_PICURE:
+                    url = (UploadUtil.upload_profile_picture(image, email=name))["image_url"]
+                else:
+                    pass
+            return api_response("Pictures created", {"urls": image_urls}, True, 200)
+        return api_response("Pictures created", {}, False, 400)

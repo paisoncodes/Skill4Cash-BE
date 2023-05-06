@@ -1,8 +1,8 @@
 from rest_framework.exceptions import AuthenticationFailed
 from authentication.models import User
 from django.conf import settings
-from utils.utils import AuthUtil
 from random import randint
+from utils.utils import create_token
 
 
 def generate_number():
@@ -23,7 +23,7 @@ def register_social_user(provider, email, first_name, last_name, username, role,
 
         if provider == filtered_user_by_email[0].auth_provider:
 
-            registered_user = AuthUtil.create_token(
+            registered_user = create_token(
             						password=settings.SOCIAL_SECRET,
             						email=email
                                 )
@@ -57,7 +57,7 @@ def register_social_user(provider, email, first_name, last_name, username, role,
         user = User.objects.create_user(**user)
         user.save()
 
-        registered_user = AuthUtil.create_token(
+        registered_user = create_token(
         	password=settings.SOCIAL_SECRET,
         	email=email,
         	phone_number=None

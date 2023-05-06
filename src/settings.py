@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
-import dj_database_url
-import django_heroku
 import os
 import cloudinary
 
@@ -32,7 +30,7 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", cast=bool)
 
 
-ALLOWED_HOSTS = ["*", "skills4cash-be.herokuapp.com"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -56,11 +54,9 @@ INSTALLED_APPS = [
     "chat",
 
     # external apps
-    "phonenumber_field",
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_yasg",
-    "dj_rest_auth",
     "rest_framework.authtoken",
     "corsheaders",
     "channels",
@@ -207,24 +203,10 @@ SWAGGER_SETTINGS = {
     },
 }
 
-
-# Activate Django-Heroku.
-django_heroku.settings(locals())
-
-# TWILIO CONFIG FILES
-ACCOUNT_SID = config("ACCOUNT_SID")
-AUTH_TOKEN = config("AUTH_TOKEN")
-MESSAGE_SERVICE = config("MESSAGE_SERVICE")
-TO = config("TO")
-
-# AMAZON SES CONFIG FILES
-AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
-AWS_SECRET_KEY = config("AWS_SECRET_KEY")
-CHARSET = "UTF-8"
-AWS_REGION = "us-east-1"
-SENDER = config("SENDER")
-RECIPIENT = config("RECIPIENT")
-
+PATH = os.path.join(BASE_DIR, 'authentication')
+GALLERY = "GALLERY"
+PROFILE_PICTURE = "PROFILE_PICTURE"
+DOCUMENT = "DOCUMENT"
 HTTP = config("HTTP")
 
 # Cloudinary configuration
@@ -240,8 +222,6 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 SOCIAL_SECRET = config('SOCIAL_SECRET')
 
 

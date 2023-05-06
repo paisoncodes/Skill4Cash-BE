@@ -10,6 +10,7 @@ from .views import (
     SendPhoneNumberOtp,
     SetUpCustomerProfile,
     SetUpServiceProviderProfile,
+    UploadPictures,
     VerifyOtp,
     VerifyPhoneNumberOtp,
 )
@@ -49,5 +50,6 @@ urlpatterns = [
     path("chats-recent/<str:user_id>/",chat_recent_dms),
     path("notifications/", notify_list),
     path("notifications/<str:id>/", notify_detail),
-    path("notifications-user/<str:user_id>/", notify_by_user)
+    path("notifications-user/<str:user_id>/", notify_by_user),
+    path("upload-pictures/<str:filetype>/", UploadPictures.as_view())
 ]
