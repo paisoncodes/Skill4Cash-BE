@@ -104,7 +104,7 @@ class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
         return profile
 
 class ImageSerializer(serializers.Serializer):
-    files = serializers.ImageField(write_only=True, required=False)
+    files = serializers.FileField(write_only=True, required=False)
     class Meta:
         fields = (
             "files",
@@ -116,7 +116,7 @@ class ImageSerializer(serializers.Serializer):
 
         if image_fields:
             image_update_dict = {
-                _: serializers.ImageField(required=False, write_only=True) for _ in image_fields
+                _: serializers.FileField(required=False, write_only=True) for _ in image_fields
             }
             self.fields.update(**image_update_dict)
 class UserProfileSerializer(serializers.ModelSerializer):

@@ -6,7 +6,7 @@ from rest_framework import permissions
 from django.conf import settings
 from django.contrib import admin
 from drf_yasg import openapi
-from utils.views import get_lgas, get_states
+from utils.views import get_lgas, get_states, populate_states_and_lga
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -26,6 +26,7 @@ urlpatterns = [
     # path('api/v1/', include('chat.urls')),
     path('api/v1/get-states', get_states),
     path('api/v1/get-lgas', get_lgas),
+    path('api/v1/add-states-and-lgas', populate_states_and_lga)
 ]
 
 if settings.DEBUG:

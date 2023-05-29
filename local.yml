@@ -11,11 +11,11 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_s4k:/var/lib/postgresql/data
     ports:
       - 5435:5435
     expose:
-      - 5434
+      - 5435
     command: -p 5435
     restart: always
 
@@ -45,6 +45,6 @@ services:
       - db
       - cache
 volumes: 
-  postgres_data:
+  postgres_data_s4k:
   cache:
     driver: local

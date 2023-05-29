@@ -405,14 +405,14 @@ response_schema_dict = {
 class UploadPictures(GenericAPIView):
     serializer_class = ImageSerializer
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         responses=response_schema_dict
     )
     def post(self, request, filetype):
         name = request.user.get("email") if request.user.is_authenticated else ""
-        if filetype.upper() not in [settings.GALLERY, settings.PROFILE_PICTURE, settings.DOCUMENT]:
+        if filetype.upper() not in [settings.GALLERY, settings.PROFILE_PICTURE, settings.DOCUMENT, settings.VIDEO]:
             return api_response("Invalid filetype, '%s'" %filetype, {}, False, 400)
         images = [x for x in request.FILES.keys()]
         serializer = self.serializer_class(data=request.data, images=images)
@@ -422,8 +422,10 @@ class UploadPictures(GenericAPIView):
                 if filetype.upper() == settings.GALLERY:
                     url = (UploadUtil.upload_gallery_image(image, business_name=name))
                     image_urls.append(url)
-                elif filetype.upper() == settings.PROFILE_PICURE:
+                elif filetype.upper() == settings.PROFILE_PICTURE:
                     url = (UploadUtil.upload_profile_picture(image, email=name))["image_url"]
+                elif filetype.upper() == settings.VIDEO:
+                    url = (UploadUtil.upload_video(image))["image_url"]
                 else:
                     pass
             return api_response("Image(s) uploaded", {"urls": image_urls}, True, 201)

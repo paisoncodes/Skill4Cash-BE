@@ -125,7 +125,7 @@ ASGI_APPLICATION = "src.asgi.application"
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-
+print("db_engine: %s" % config("POSTGRES_DB"))
 DATABASES = {
     "default": {
         "ENGINE": config("DB_ENGINE"),
@@ -207,6 +207,7 @@ PATH = os.path.join(BASE_DIR, 'authentication')
 GALLERY = "GALLERY"
 PROFILE_PICTURE = "PROFILE_PICTURE"
 DOCUMENT = "DOCUMENT"
+VIDEO = "VIDEO"
 HTTP = config("HTTP")
 
 # Cloudinary configuration

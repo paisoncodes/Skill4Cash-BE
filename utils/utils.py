@@ -43,6 +43,21 @@ class UploadUtil:
                 "image_url": ""
             }
     @staticmethod
+    def upload_video(image:str, email:str="skill4cash_user_video") -> dict:
+        try:
+            response = uploader.upload(image, public_id = f"{email}", unique_filename = True, overwrite=True, folder="video")
+            return {
+                "success": True,
+                "message": "Upload successful",
+                "image_url": response.get("secure_url")
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e),
+                "image_url": ""
+            }
+    @staticmethod
     def upload_gallery_image(image:str, business_name:str="skill4cash_business_user") -> dict:
         try:
             response = uploader.upload(image, unique_filename = True, overwrite=True, folder=f"gallery/{business_name}")
