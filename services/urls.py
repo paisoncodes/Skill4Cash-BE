@@ -1,10 +1,12 @@
 from django.urls import path
 
+from authentication.views import PopulateCategory
+
 from .views import (
     CreateReadReview,
     CreateReadSchedule,
     ReadSPReviews,
-    CreateReadCategory,
+    ReadCategory,
     ReadSPSchedules,
     ReadUpdateDeleteSchedule,
 
@@ -13,7 +15,8 @@ from .views import (
 urlpatterns = [
     path("reviews/", CreateReadReview.as_view(), name='review-list'),
     path("sp/reviews/", ReadSPReviews.as_view(), name='sp_review-list'),
-    path("categories/", CreateReadCategory.as_view(), name="categories-list"),
+    path("get-categories/", ReadCategory.as_view(), name="categories-list"),
+    path("add-categories/", PopulateCategory.as_view(), name="categories-list"),
     path("schedules/", CreateReadSchedule.as_view(), name='schedule-list'),
     path("sp/schedules/", ReadSPSchedules.as_view(), name='sp_schedule-list'),
     path("sp/schedules/<str:id>/",

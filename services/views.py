@@ -6,8 +6,7 @@ from .models import Rating, Schedule
 from authentication.models import (
     User, Category,
 )
-from random import choice
-from django.utils import timezone
+from rest_framework.generics import GenericAPIView
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from src.permissions import IsOwnerOrReadOnly
@@ -64,30 +63,14 @@ class ReadSPReviews(APIView):
             )
 
 
-class CreateReadCategory(APIView):
+class ReadCategory(GenericAPIView):
     serializer_class = CategorySerializer
-    category = Category.objects.all()
 
     def get(self, request):
-        category_serializer = CategorySerializer(self.category, many=True)
-        return api_response("Categories retrieved successfully", 200, "Success", category_serializer.data)
+        categories = Category.objects.all()
+        category_serializer = CategorySerializer(categories, many=True)
+        return api_response(message="Categories retrieved successfully", code=200, status=True, data=category_serializer.data)
 
-    @swagger_auto_schema(request_body=serializer_class)
-    def post(self, request):
-        serializer = CategorySerializer(data=request.data)
-        category_name = request.data["name"]
-
-        category = Category.objects.filter(name__iexact=category_name)
-        if category.exists():
-            return Response({"message": "category name already exists!"})
-
-        else:
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CreateReadSchedule(APIView):

@@ -38,6 +38,9 @@ class CustomerProfileSetUpSerializer(serializers.ModelSerializer):
 
         user.set_password(validated_data.pop("password"))
 
+        validated_data["state"] = State.objects.get(state__iexact=validated_data['state'])
+        validated_data["lga"] = Lga.objects.get(lga__iexact=validated_data['lga'])
+
         profile = UserProfile.objects.create(**validated_data)
 
         return profile
@@ -83,7 +86,8 @@ class ServiceProviderProfileSetUpSerializer(serializers.ModelSerializer):
         service_category = validated_data.pop('service_category')
         category, created = Category.objects.get_or_create(name=service_category)
         business_profile["service_category"] = category
-        business_profile["gallery"] = validated_data.pop('gallery_photos')
+        if "gallery_photos" in validated_data.keys():
+            business_profile["gallery"] = validated_data.pop('gallery_photos')
         keywords = validated_data.pop('keywords')
         business_profile["description"] = validated_data.pop('description')
         validated_data["state"] = State.objects.get(state__iexact=validated_data['state'])

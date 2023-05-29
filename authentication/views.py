@@ -388,7 +388,7 @@ class PopulateCategory(GenericAPIView):
             else:
                 Category.objects.create(name=name, image=image_url)
         serializer = self.serializer_class(Category.objects.all(), many=True)
-        return api_response("Categories uploaded successfully", 201, "Success", serializer.data)
+        return api_response("Categories uploaded successfully", serializer.data, True, 201)
 
 
 response_schema_dict = {
