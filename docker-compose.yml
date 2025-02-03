@@ -4,7 +4,6 @@ services:
   db:
     image: postgres:12
     environment:
-      - DB_ENGINE=${DB_ENGINE}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}

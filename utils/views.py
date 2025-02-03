@@ -1,29 +1,54 @@
-from authentication.serializers import LgaSerializer, StateSerializer
-from rest_framework.decorators import api_view
-from utils.models import Lga, State
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from utils.utils import api_response
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from authentication.serializers import LgaSerializer, StateSerializer
+from utils.models import Lga, State
 
 
+class StateViewSet(viewsets.GenericViewSet):
+    serializer_classes = {
+        "list": StateSerializer,
+    }
+    queryset = State.objects.all()
+
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action)
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="List of all states")},
+    )
+    def list(self, request):
+        serializer = self.get_serializer(self.queryset, many=True)
+        return api_response("States fetched", serializer.data, True, 200)
 
 
-@api_view(["GET"])
-def get_states(request):
-    states = State.objects.all()
-    serialzier = StateSerializer(states, many=True)
+class LgaViewSet(viewsets.GenericViewSet):
+    serializer_classes = {
+        "list": LgaSerializer,
+    }
+    queryset = Lga.objects.all()
 
-    return api_response("States fetched", serialzier.data, True, 200)
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action)
 
-state = openapi.Parameter('state', openapi.IN_QUERY,
-                             description="State you want to retrieve lgas from.",
-                             type=openapi.TYPE_STRING, required=True)
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="state",
+                description="State you want to retrieve LGAs from.",
+                required=True,
+                type=str,
+                location=OpenApiParameter.QUERY,
+            )
+        ],
+        responses={200: OpenApiResponse(description="List of LGAs for a given state")},
+    )
+    def list(self, request):
+        state = request.query_params.get("state", None)
+        if not state:
+            return api_response("State parameter is required", {}, False, 400)
 
-@swagger_auto_schema(manual_parameters=[state], method='get')
-@api_view(["GET"])
-def get_lgas(request):
-    state = request.GET.get('state', None)
-    lgas = Lga.objects.filter(state__state__icontains=state)
-    serialzier = LgaSerializer(lgas, many=True)
-
-    return api_response("Lgas fetched", serialzier.data, True, 200)
+        lgas = Lga.objects.filter(state__state__icontains=state)
+        serializer = self.get_serializer(lgas, many=True)
+        return api_response("LGAs fetched", serializer.data, True, 200)

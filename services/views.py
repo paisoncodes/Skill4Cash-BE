@@ -1,60 +1,69 @@
-from utils.utils import api_response
-from .serializers import RatingSerializer, CategorySerializer, ScheduleSerializer
-
-from .models import Rating, Schedule
-
-from authentication.models import (
-    User, Category,
-)
-from random import choice
-from django.utils import timezone
-
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from src.permissions import IsOwnerOrReadOnly
-from rest_framework.views import APIView
+import json
+from django.conf import settings
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from utils.utils import UploadUtil, api_response
+from .serializers import RatingSerializer, CategorySerializer, ScheduleSerializer
+from .models import Rating, Schedule
+from authentication.models import User, Category
 
 
-class CreateReadReview(APIView):
-    permission_classes = (IsAuthenticated,)
-    serializer_class = RatingSerializer
-    ratings = Rating.objects.all()
+class RatingViewSet(viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_classes = {
+        "list": RatingSerializer,
+        "create": RatingSerializer,
+        "retrieve_sp_reviews": RatingSerializer,
+    }
+    queryset = Rating.objects.all()
 
-    def get(self, request):
-        ratings_seriailizers = RatingSerializer(self.ratings, many=True)
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action)
 
-        return Response(ratings_seriailizers.data, status=status.HTTP_200_OK)
+    @extend_schema(
+        responses={200: OpenApiResponse(description="List of all ratings")},
+    )
+    def list(self, request):
+        ratings_serializers = self.get_serializer(self.queryset, many=True)
+        return Response(ratings_serializers.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(request_body=serializer_class)
-    def post(self, request):
+    @extend_schema(
+        request=RatingSerializer,
+        responses={201: OpenApiResponse(description="Rating created successfully")},
+    )
+    def create(self, request):
         try:
-            customer = User.objects.get(id=request.data["customer"], role="customer")
-            service_provider = User.objects.get(
+            User.objects.get(id=request.data["customer"], role="customer")
+            User.objects.get(
                 id=request.data["service_provider"], role="service_provider"
             )
         except Exception as e:
-            return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = RatingSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-class ReadSPReviews(APIView):
-    permission_classes = (IsAuthenticated,)
-    queryset = Rating.objects.all()
-
-    def get(self, request):
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Service provider reviews retrieved successfully"
+            )
+        },
+    )
+    @action(detail=False, methods=["get"])
+    def retrieve_sp_reviews(self, request):
         try:
             sp_review = Rating.objects.filter(service_provider__user=request.user)
             if sp_review.exists():
-                return Response(sp_review, status=status.HTTP_200_OK)
+                serializer = self.get_serializer(sp_review, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({"ratings": []}, status=status.HTTP_204_NO_CONTENT)
         except ObjectDoesNotExist:
@@ -64,139 +73,187 @@ class ReadSPReviews(APIView):
             )
 
 
-class CreateReadCategory(APIView):
-    serializer_class = CategorySerializer
-    category = Category.objects.all()
+class CategoryViewSet(viewsets.GenericViewSet):
+    serializer_classes = {
+        "list": CategorySerializer,
+        "create": CategorySerializer,
+        "populate": CategorySerializer,
+    }
+    queryset = Category.objects.all()
 
-    def get(self, request):
-        category_serializer = CategorySerializer(self.category, many=True)
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action)
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="List of all categories")},
+    )
+    def list(self, request):
+        category_serializer = self.get_serializer(self.queryset, many=True)
         return api_response("Categories retrieved successfully", 200, "Success", category_serializer.data)
 
-    @swagger_auto_schema(request_body=serializer_class)
-    def post(self, request):
-        serializer = CategorySerializer(data=request.data)
+    @extend_schema(
+        request=CategorySerializer,
+        responses={201: OpenApiResponse(description="Category created successfully")},
+    )
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
         category_name = request.data["name"]
 
-        category = Category.objects.filter(name__iexact=category_name)
-        if category.exists():
-            return Response({"message": "category name already exists!"})
-
-        else:
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CreateReadSchedule(APIView):
-    serializer_class = ScheduleSerializer
-    permission_classes = (IsAuthenticated,)
-    schedules = Schedule.objects.all()
-
-    def get(self, request):
-        schedules = ScheduleSerializer(self.schedules, many=True)
-        return Response(schedules.data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(request_body=serializer_class)
-    def post(self, request):
-        try:
-            customers = User.objects.get(id=request.data["customer"], role="customer")
-            service_providers = User.objects.get(
-                id=request.data["service_provider"], role="service_provider"
+        if Category.objects.filter(name__iexact=category_name).exists():
+            return Response(
+                {"message": "Category name already exists!"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = ScheduleSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={
+            201: OpenApiResponse(description="Categories populated successfully")
+        },
+    )
+    @action(detail=False, methods=["post"])
+    def populate(self, request):
+        with open(f"{settings.PATH}/categories.json") as file:
+            categories = json.load(file)
+        for key in categories.keys():
+            category_name = "-".join(key.split("_"))
+            name = " ".join(key.split("_"))
+            image_url = (
+                UploadUtil.upload_category_image(
+                    f"{settings.PATH}/{categories[key]}", category_name
+                )
+            )["image_url"]
+            if Category.objects.filter(name=name).exists():
+                continue
+            else:
+                Category.objects.create(name=name, image=image_url)
+        serializer = self.get_serializer(Category.objects.all(), many=True)
+        return api_response(
+            "Categories uploaded successfully", 201, "Success", serializer.data
+        )
 
 
-class ReadSPSchedules(APIView):
-    serializer_class = ScheduleSerializer
-    permission_classes = (IsAuthenticated,)
+class ScheduleViewSet(viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_classes = {
+        "list": ScheduleSerializer,
+        "create": ScheduleSerializer,
+        "retrieve_sp_schedules": ScheduleSerializer,
+        "retrieve_update_delete": ScheduleSerializer,
+    }
+    queryset = Schedule.objects.all()
 
-    def get(self, request):
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action)
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="List of all schedules")},
+    )
+    def list(self, request):
+        schedules_serializer = self.get_serializer(self.queryset, many=True)
+        return Response(schedules_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=ScheduleSerializer,
+        responses={201: OpenApiResponse(description="Schedule created successfully")},
+    )
+    def create(self, request):
+        try:
+            User.objects.get(id=request.data["customer"], role="customer")
+            User.objects.get(
+                id=request.data["service_provider"], role="service_provider"
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Service provider schedules retrieved successfully"
+            )
+        },
+    )
+    @action(detail=False, methods=["get"])
+    def retrieve_sp_schedules(self, request):
         try:
             schedules = Schedule.objects.filter(service_provider__user=request.user)
-
             if schedules.exists():
-                serialized_schedules = ScheduleSerializer(schedules)
-                return Response(serialized_schedules.data, status=status.HTTP_200_OK)
+                serializer = self.get_serializer(schedules, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response({"schedules": []}, status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
-            return Response({"error": e}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
-
-class ReadUpdateDeleteSchedule(APIView):
-    serializer_class = ScheduleSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_object(self, id):
-        try:
-            return Schedule.objects.get(id=id)
-        except Schedule.DoesNotExist:
-            return None
-
-    def get(self, request, id):
-
-        if schedule := self.get_object(id):
-
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Schedule retrieved successfully")},
+    )
+    def retrieve(self, request, pk=None):
+        schedule = self.get_object()
+        if schedule:
             if schedule.service_provider.user == request.user:
-                serialized_schedule = ScheduleSerializer(schedule, many=False)
-
-                return Response(serialized_schedule.data, status=status.HTTP_200_OK)
+                serializer = self.get_serializer(schedule)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(
                     {"message": "You can't view this schedule"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
         return Response(
-            {"error": "Instance of User does not exist"},
+            {"error": "Instance of Schedule does not exist"},
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    @swagger_auto_schema(request_body=serializer_class)
-    def put(self, request, id):
-
-        if schedule := self.get_object(id):
-
+    @extend_schema(
+        request=ScheduleSerializer,
+        responses={200: OpenApiResponse(description="Schedule updated successfully")},
+    )
+    def update(self, request, pk=None):
+        schedule = self.get_object()
+        if schedule:
             if schedule.service_provider.user == request.user:
-                customer = (
-                    request.data["customer"]
-                    if "customer" in request.data.keys()
-                    else schedule.customer
+                serializer = self.get_serializer(
+                    schedule, data=request.data, partial=True
                 )
-                service_provider = (
-                    request.data["service_provider"]
-                    if "customer" in request.data.keys()
-                    else schedule.service_provider
-                )
-
-                serialized_schedule = ScheduleSerializer(schedule, data=request.data)
-
-                if serialized_schedule.is_valid():
-                    serialized_schedule.save()
-
-                    return Response(serialized_schedule.data, status=status.HTTP_200_OK)
-                else:
-                    return Response(
-                        {"error": "Invalid input"}, status=status.HTTP_400_BAD_REQUEST
-                    )
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response(
                     {"message": "You can't edit this schedule"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
         return Response(
-            {"error": "Instance of User does not exist"},
+            {"error": "Instance of Schedule does not exist"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    @extend_schema(
+        responses={204: OpenApiResponse(description="Schedule deleted successfully")},
+    )
+    def destroy(self, request, pk=None):
+        schedule = self.get_object()
+        if schedule:
+            if schedule.service_provider.user == request.user:
+                schedule.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response(
+                    {"message": "You can't delete this schedule"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+        return Response(
+            {"error": "Instance of Schedule does not exist"},
             status=status.HTTP_404_NOT_FOUND,
         )

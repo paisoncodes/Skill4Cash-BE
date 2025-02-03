@@ -1,1 +1,1 @@
-daphne src.asgi:application --port 9800 --bind 0.0.0.0
+watchmedo auto-restart --patterns="*.py" --recursive -- daphne src.asgi:application --port 6800 --bind 0.0.0.0
