@@ -32,6 +32,8 @@ DEBUG = config("DEBUG", cast=bool)
 
 ALLOWED_HOSTS = ["*"]
 
+ADMIN_PATH = config("ADMIN_PATH")
+
 
 # Application definition
 
@@ -57,6 +59,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_yasg",
+    "drf_spectacular",
     "rest_framework.authtoken",
     "corsheaders",
     "channels",
@@ -108,27 +111,21 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication"
-    ]
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 ASGI_APPLICATION = "src.asgi.application"
-# WSGI_APPLICATION = "src.wsgi.application"
+WSGI_APPLICATION = "src.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
     "default": {
-        "ENGINE": config("DB_ENGINE"),
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": config("POSTGRES_DB"),
         "USER": config("POSTGRES_USER"),
         "PASSWORD": config("POSTGRES_PASSWORD"),
@@ -194,13 +191,11 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-SWAGGER_SETTINGS = {
-    "USE_SESSION_AUTH": False,
-    "relative_paths": False,
-    'displayOperationId': True,
-    "SECURITY_DEFINITIONS": {
-        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
-    },
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your API',
+    'DESCRIPTION': 'Your API description',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 PATH = os.path.join(BASE_DIR, 'authentication')

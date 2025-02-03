@@ -1,10 +1,10 @@
 version: "3.9"
 
 services:
-  db:
+  skill4cash_db:
     image: postgres:12
+    container_name: skill4cash_db
     environment:
-      - DB_ENGINE=${DB_ENGINE}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -19,31 +19,27 @@ services:
     command: -p 5435
     restart: always
 
-  cache:
+  skill4cash_cache:
     image: redis:6.2-alpine
+    container_name: skill4cash_cache
     restart: always
-    ports:
-      - "6379:6379"
-    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
       - cache:/var/lib/redis/data
-    expose:
-      - 6379
 
-  skill4cash-api:
+  skill4cash_api:
     build: .
     command: sh local-entry.sh
     volumes:
       - .:/app
     ports:
-      - "9800:9800"
+      - "6800:6800"
     expose:
-      - 9800
+      - 6800
     restart: always
 
     depends_on:
-      - db
-      - cache
+      - skill4cash_db
+      - skill4cash_cache
 volumes: 
   postgres_data:
   cache:
